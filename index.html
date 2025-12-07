@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Gameworks: Creation Galaxy</title>
+    
+    <!-- 1. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        html { font-size: 18px; }
+        body { margin: 0; overflow-x: hidden; background-color: #020617; font-family: 'Inter', sans-serif; }
+        .clip-path-polygon {
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        
+        @keyframes beam-flow {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 0% 100%; }
+        }
+        .energy-beam {
+            background: linear-gradient(to bottom, transparent, rgba(34, 211, 238, 0.5) 50%, transparent);
+            background-size: 100% 200%;
+            animation: beam-flow 2s linear infinite;
+        }
+        
+        /* Markdown-like styling for articles */
+        .prose h1 { font-size: 2rem; font-weight: 800; margin-bottom: 1.5rem; color: white; }
+        .prose h2 { font-size: 1.5rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; color: #e2e8f0; border-left: 4px solid #06b6d4; padding-left: 1rem; }
+        .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #cbd5e1; }
+        .prose p { margin-bottom: 1rem; line-height: 1.7; color: #94a3b8; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #94a3b8; }
+        .prose li { margin-bottom: 0.5rem; }
+        .prose strong { color: #22d3ee; font-weight: 600; }
+    </style>
+
+    <!-- 3. Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "framer-motion": "https://esm.sh/framer-motion@10.16.4?deps=react@18.2.0,react-dom@18.2.0",
+        "three": "https://esm.sh/three@0.160.0",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.2.0"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef, useMemo } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { motion, AnimatePresence } from 'framer-motion';
+        import * as THREE from 'three';
+        import { 
+            Brain, Layers, Gamepad2, Users, Activity, Code, Box, Music, Video, 
+            Search, Globe, BarChart, Database, Zap, ChevronRight, ArrowRight, 
+            Menu, X, Mail, Linkedin, Twitter, Cpu, FlaskConical, FileText, 
+            Wrench, MessageSquare, Tag, Star, Lock, Unlock, Play, ChevronLeft,
+            Shield, Sword, Scroll, Map, TestTube, Microscope, Terminal, Calendar,
+            Server, Orbit, Rocket, Satellite, Timer, TrendingUp, CheckCircle2,
+            Target, FileJson, Presentation, Layout, Coins, MessageCircle, HeartHandshake, Eye, EyeOff
+        } from 'lucide-react';
+
+        // --- SOUND EFFECT UTILITY ---
+        const playClickSound = () => {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                // Sci-fi UI "Chirp"
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.1);
+            } catch (e) {
+                console.error("Audio play failed", e);
+            }
+        };
+
+        /* --- DATA STRUCTURE: PHASES & DOMAINS --- */
+        
+        const PHASES_CONFIG = [
+            { id: "preprod", name: "Pre-production", desc: "The Brain: Ideation & Raw Concepts", color: 0xd946ef, type: "brain", x: -75 }, 
+            { id: "production", name: "Production", desc: "The Construct: Rough but Forming", color: 0xf97316, type: "construct", x: -25 },
+            { id: "qa", name: "QA & Polish", desc: "The Sphere: Polished Perfection", color: 0x10b981, type: "perfect", x: 25 },
+            { id: "liveops", name: "LiveOps", desc: "The Nexus: Data Stream & Updates", color: 0x8b5cf6, type: "nexus", x: 75 }
+        ];
+
+        const DOMAINS_DATA = {
+            // --- PRE-PRODUCTION ---
+            "art": {
+                title: "AI Art Pipeline",
+                relatedArticleId: 6, // Link to the article ID
+                icon: <Box />,
+                phase_modules: [{ id: "art_preprod", phase: "preprod", name: "AI Art Pipeline" }],
+                headerDesc: "Forming visual genes (color, shape, material, symbols) and rapidly validating style adaptability.",
+                tools: ["Midjourney v7.3", "Stable Diffusion 3.5", "Ideogram 3", "Hunyuan Turbo", "Adobe Firefly 3", "Rodin 2", "Nana Bana Pro"],
+                flow: ["Style Guide / Moodboard", "Atmosphere Keyframes", "Multi-direction Concepts", "KV Sketches", "Character Multi-views", "Monster Evolution"],
+                comparison: [{ dimension: "Exploration Speed", trad: "Weeks", ai: "Days", score: 95 }, { dimension: "Style Variations", trad: "Limited", ai: "10-20 Sets", score: 98 }, { dimension: "Outsource Cost", trad: "High", ai: "Minimal", score: 90 }],
+                value: [{ label: "Efficiency", val: "+90%", desc: "Exploration Speed" }, { label: "Quantity", val: "10x", desc: "Concept Directions" }, { label: "Cost", val: "-90%", desc: "Outsourcing" }],
+                roles: { ai: "Massive Generation / Style Transfer", human: "Art Direction / Curation / Guidelines" }
+            },
+            "design": {
+                title: "AI Game Design Pipeline",
+                icon: <Gamepad2 />,
+                phase_modules: [{ id: "design_preprod", phase: "preprod", name: "AI Game Design Pipeline" }],
+                headerDesc: "Generating gameplay variants (1->20), constructing Meta/Economy infrastructure, and identifying risks early.",
+                tools: ["Ludo.ai", "ChatGPT GPT-5.1", "Claude 3.7 Design", "Gemini 3.0", "Whimsical AI", "Miro AI", "Eraser AI"],
+                flow: ["Core Loop Variants", "Systems Overview", "META Progression", "Economy Draft", "Info Diagrams", "Risk Identification"],
+                comparison: [{ dimension: "Variant Gen", trad: "1-3 Options", ai: "20+ Options", score: 95 }, { dimension: "Documentation", trad: "Manual", ai: "Auto-Gen", score: 85 }, { dimension: "Risk ID", trad: "Slow", ai: "Fast", score: 80 }],
+                value: [{ label: "Output", val: "20x", desc: "Content Volume" }, { label: "Docs", val: "+75%", desc: "Efficiency" }, { label: "Risk ID", val: "+50%", desc: "Speed" }],
+                roles: { ai: "System Simulation / Drafting / Variant Gen", human: "Core Mechanics / Balancing / Decision" }
+            },
+            "narrative": {
+                title: "AI Narrative Pipeline",
+                icon: <Scroll />,
+                phase_modules: [{ id: "narrative_preprod", phase: "preprod", name: "AI Narrative Pipeline" }],
+                headerDesc: "Constructing world rules, civilizations, factions, and linking character relationships to conflicts.",
+                tools: ["ChatGPT Narrative", "Claude 3.7 Opus", "Gemini 3.0 Ultra", "Midjourney Story", "Krea Storyboard", "Nana Bana Pro"],
+                flow: ["World Bible", "Character Profiles", "Main/Side Quest Pitch", "IP Expansion", "Story Key Moments"],
+                comparison: [{ dimension: "World Building", trad: "Linear", ai: "Expansive", score: 92 }, { dimension: "Pitching", trad: "Text Only", ai: "Visual+Text", score: 88 }],
+                value: [{ label: "World Gen", val: "+300%", desc: "Volume" }, { label: "Char Gen", val: "+70%", desc: "Efficiency" }, { label: "Stories", val: "10x", desc: "Versions" }],
+                roles: { ai: "Lore Generation / Dialogues / Visuals", human: "Emotional Arc / Polish / Logic" }
+            },
+            "3d_asset": {
+                title: "AI 3D / Greybox Pipeline",
+                relatedArticleId: 7,
+                icon: <Box />,
+                phase_modules: [{ id: "3d_preprod", phase: "preprod", name: "AI 3D / Greybox Pipeline" }],
+                headerDesc: "Rapidly building playable scenes and rough mesh placeholders to verify level pacing and routes.",
+                tools: ["Skybox AI", "Meshy 2025", "Tripo 2.0", "Luma Genie 2", "Promethean AI v3", "Scenario AI"],
+                flow: ["Playable Greybox", "Rough Mesh", "Auto-Layout Scene", "Terrain Draft", "Prototype Demo"],
+                comparison: [{ dimension: "Scene Setup", trad: "Manual", ai: "Auto-Layout", score: 85 }, { dimension: "Placeholder", trad: "Cube", ai: "Rough Mesh", score: 90 }],
+                value: [{ label: "Greybox", val: "+60%", desc: "Setup Speed" }, { label: "Rough Mesh", val: "+85%", desc: "Generation" }, { label: "Time", val: "-4w", desc: "Saved" }],
+                roles: { ai: "Asset Gen / Layout", human: "Level Design / Navigation / Verify" }
+            },
+            "pv": {
+                title: "AI PV / Trailer Pipeline",
+                icon: <Video />,
+                phase_modules: [{ id: "pv_preprod", phase: "preprod", name: "AI PV / Trailer Pipeline" }],
+                headerDesc: "Generating shots, storyboards, and keyframes for project pitch. Achieving AAA visuals for small teams.",
+                tools: ["Runway Gen-3 Alpha", "Kling Pro", "Pika v5", "Sora", "Midjourney Storyboard", "Boords AI"],
+                flow: ["30-60s Concept PV", "Shotlist", "Storyboard", "Key Visuals", "VO/Sound Draft"],
+                comparison: [{ dimension: "Production", trad: "3 Months", ai: "7-10 Days", score: 95 }, { dimension: "Cost", trad: "High", ai: "Minimal", score: 95 }],
+                value: [{ label: "Speed", val: "10x", desc: "Faster" }, { label: "Keyframes", val: "20x", desc: "More Options" }, { label: "Cost", val: "-90%", desc: "Reduction" }],
+                roles: { ai: "Video Gen / Storyboard / VO", human: "Editing / Direction / Pacing" }
+            },
+            "audio": {
+                title: "AI Audio Pipeline",
+                icon: <Music />,
+                phase_modules: [{ id: "audio_preprod", phase: "preprod", name: "AI Audio Pipeline" }],
+                headerDesc: "Establishing world mood with placeholder music and sound effects. Enabling audio-driven prototyping.",
+                tools: ["Suno v4.2", "Udio Pro", "AudioGen XL", "ElevenLabs SFX", "Adobe Audio Enhance", "Landr AI"],
+                flow: ["Atmosphere BGM", "SFX Library", "Trailer Audio Draft", "VO Placeholder"],
+                comparison: [{ dimension: "Mood Check", trad: "Imagination", ai: "Audible", score: 90 }, { dimension: "Assets", trad: "Stock", ai: "Generated", score: 85 }],
+                value: [{ label: "BGM", val: "+90%", desc: "Gen Speed" }, { label: "SFX", val: "+70%", desc: "Drafting" }, { label: "Team", val: "0", desc: "Audio Staff Needed" }],
+                roles: { ai: "Composition / SFX Gen", human: "Selection / Integration / Mood" }
+            },
+            "docs": {
+                title: "AI Documentation Pipeline",
+                icon: <FileText />,
+                phase_modules: [{ id: "docs_preprod", phase: "preprod", name: "AI Documentation Pipeline" }],
+                headerDesc: "Structuring chaotic meetings into organized documents and decks. Ensuring alignment.",
+                tools: ["ChatGPT Docs Pro", "Claude 3.7 Docs", "Gemini 3.0 Workplace", "Gamma", "Tome", "Canva AI"],
+                flow: ["GDD Lite", "Internal Pitch Deck", "PRD Structure", "One-pager"],
+                comparison: [{ dimension: "Drafting", trad: "Manual", ai: "Auto-Structure", score: 80 }, { dimension: "Deck Gen", trad: "Manual", ai: "Auto-Slide", score: 85 }],
+                value: [{ label: "Docs", val: "+60%", desc: "Speed" }, { label: "PPT", val: "+80%", desc: "Gen Speed" }, { label: "Alignment", val: "High", desc: "Consistency" }],
+                roles: { ai: "Summarization / Formatting / Drafting", human: "Logic Check / Approval" }
+            },
+            "market": {
+                title: "AI Market Analysis",
+                icon: <TrendingUp />,
+                phase_modules: [{ id: "market_preprod", phase: "preprod", name: "AI Market Analysis" }],
+                headerDesc: "Predicting target players (Persona), analyzing competitors, and early commercial validation.",
+                tools: ["ChatGPT Business", "Claude Insights", "Gemini Market 3.0", "Data.ai 2025", "Sensor Tower"],
+                flow: ["Player Persona", "Competitor Breakdown", "Market Trends", "ROI Estimation"],
+                comparison: [{ dimension: "Data Processing", trad: "Slow", ai: "Instant", score: 90 }, { dimension: "Insight", trad: "Subjective", ai: "Data-Backed", score: 85 }],
+                value: [{ label: "Competitors", val: "+90%", desc: "Analysis Speed" }, { label: "Insights", val: "+70%", desc: "Depth" }, { label: "Risk", val: "Low", desc: "Early Validation" }],
+                roles: { ai: "Data Mining / Pattern Rec", human: "Strategy Decision" }
+            },
+            "code_proto": {
+                title: "AI Code / Prototype",
+                icon: <Cpu />,
+                phase_modules: [{ id: "code_preprod", phase: "preprod", name: "AI Code / Prototype" }],
+                headerDesc: "Generating scripts and editor tools for rapid prototyping. Auto-debugging simple logic.",
+                tools: ["ChatGPT Code Interpreter", "Claude 3.7 Engineer", "Gemini 3.0 Code Assist", "GitHub Copilot X", "Unity Muse", "UE5 AI Plugins"],
+                flow: ["Gameplay Demo", "Blueprint Graphs", "Editor Tools", "UI/Interaction Scripts"],
+                comparison: [{ dimension: "Scripting", trad: "Manual", ai: "Assisted", score: 80 }, { dimension: "Tooling", trad: "Slow", ai: "Rapid", score: 70 }],
+                value: [{ label: "Prototype", val: "+60%", desc: "Speed" }, { label: "Tools", val: "+70%", desc: "Efficiency" }, { label: "Debug", val: "Auto", desc: "Basic Logic" }],
+                roles: { ai: "Boilerplate / Logic Gen / Tools", human: "Architecture / Review" }
+            },
+            "research": {
+                title: "AI Research / Feasibility",
+                icon: <Brain />,
+                phase_modules: [{ id: "research_preprod", phase: "preprod", name: "AI Research / Feasibility" }],
+                headerDesc: "Assessing tech feasibility, identifying risks, and spotting future trends.",
+                tools: ["ChatGPT Research", "Claude Tech Analysis", "Gemini 3.0 Research", "ArxivGPT", "Notion AI"],
+                flow: ["Feasibility Report", "Tech Roadmap", "Risk Matrix", "Implementation Advice"],
+                comparison: [{ dimension: "Info Gathering", trad: "Days", ai: "Minutes", score: 90 }, { dimension: "Risk Spotting", trad: "Experience", ai: "Database", score: 80 }],
+                value: [{ label: "Research", val: "+60%", desc: "Speed" }, { label: "Risks", val: "+70%", desc: "Identification" }, { label: "Docs", val: "+50%", desc: "Efficiency" }],
+                roles: { ai: "Information Synthesis / Cases", human: "Feasibility Judgment" }
+            },
+
+            // --- PRODUCTION ---
+            "prod_3d": {
+                title: "AI 3D Production Pipeline",
+                icon: <Box />,
+                phase_modules: [{ id: "prod_3d_module", phase: "production", name: "AI 3D Production Pipeline" }],
+                headerDesc: "Automating repetitive parts of 3D production: LOD, retopo, UVs, and materials.",
+                tools: ["Meshy", "Rodin 3D", "Luma Field", "Kiri Engine", "Substance AI", "Houdini AI SOP", "WorldLabs", "Adobe Firefly Material", "UE5 Nanite Optimizer AI"],
+                flow: ["High-poly Import", "AI Retopo", "AI UV Unwrapping", "AI Material Gen", "Procedural Terrain/Props", "AI LOD/Occluders", "Auto-Import UE5", "Smart QA Checks"],
+                comparison: [
+                    { dimension: "Prop Creation", trad: "1-2 Days", ai: "2-4 Hours", score: 90 },
+                    { dimension: "LOD Creation", trad: "45 Mins", ai: "5 Mins", score: 95 },
+                    { dimension: "UV Unwrapping", trad: "1 Hour", ai: "3 Mins", score: 98 }
+                ],
+                value: [
+                    { label: "Prop Speed", val: "4-8x", desc: "Faster creation" },
+                    { label: "LODs", val: "9x", desc: "Faster generation" },
+                    { label: "UVs", val: "20x", desc: "Faster unwrapping" }
+                ],
+                roles: { ai: "Batch Processing / Optimization", human: "Quality Assurance / Art Polish" }
+            },
+            "prod_anim": {
+                title: "AI Animation Pipeline",
+                icon: <Activity />,
+                phase_modules: [{ id: "prod_anim_module", phase: "production", name: "AI Animation Pipeline" }],
+                headerDesc: "Cleaning MoCap data, generating in-betweens, and driving NPC crowd behaviors.",
+                tools: ["Quick Magic AI", "Rokoko AI", "MoveAI", "DeepMotion", "Plask", "Cascadeur AI", "Houdini Crowd AI", "UE5 Motion Inspector"],
+                flow: ["Raw MoCap Import", "AI Noise Cleaning", "AI In-betweening", "Batch Motion Gen", "Blend Tree Output", "UE5 Clipping Check"],
+                comparison: [
+                    { dimension: "MoCap Cleanup", trad: "2-3 Days", ai: "10-30 Mins", score: 95 },
+                    { dimension: "In-betweening", trad: "1 Day", ai: "3 Mins", score: 98 },
+                    { dimension: "Crowd Anim", trad: "2 Weeks", ai: "1-2 Days", score: 90 }
+                ],
+                value: [
+                    { label: "Cleanup", val: "50x", desc: "Faster processing" },
+                    { label: "In-betweens", val: "20x", desc: "Faster interpolation" },
+                    { label: "Crowds", val: "7-10x", desc: "Faster generation" }
+                ],
+                roles: { ai: "Cleaning / Interpolation / Crowd", human: "Performance Nuance / Direction" }
+            },
+            "prod_audio": {
+                title: "AI Audio Production",
+                icon: <Music />,
+                phase_modules: [{ id: "prod_audio_module", phase: "production", name: "AI Audio Production" }],
+                headerDesc: "Batch-generating NPC VO, ambience, and skill SFX with consistent quality.",
+                tools: ["ElevenLabs", "Meta Voice", "Azure Voice Studio", "Suno SFX", "Soundly AI", "Boom Library AI", "iZotope RX AI", "UE5 MetaSound AI"],
+                flow: ["Text-to-VO Gen", "Skill/Env SFX Gen", "Auto Cleaning/De-noise", "AI Mixing/Loudness", "UE5 Spatialization", "Final Pack Auto-Gen"],
+                comparison: [
+                    { dimension: "100 NPC VO", trad: "3 Days", ai: "2 Hours", score: 92 },
+                    { dimension: "Foley", trad: "1-2 Days", ai: "Auto-Gen", score: 95 },
+                    { dimension: "Mixing", trad: "3 Hours", ai: "10 Mins", score: 94 }
+                ],
+                value: [
+                    { label: "VO Speed", val: "12x", desc: "Faster recording/edit" },
+                    { label: "Foley", val: "10x", desc: "Faster generation" },
+                    { label: "Mixing", val: "18x", desc: "Faster cleaning" }
+                ],
+                roles: { ai: "Generation / Cleaning / Mixing", human: "Creative Direction / Mastering" }
+            },
+            "prod_level": {
+                title: "AI Level Production",
+                icon: <Map />,
+                phase_modules: [{ id: "prod_level_module", phase: "production", name: "AI Level Production" }],
+                headerDesc: "Batch-generating maps, auto set-dressing, and optimizing lighting.",
+                tools: ["Houdini AI SOP", "WorldLabs", "World Machine AI", "Omniverse Terrain", "Skybox AI", "UE5 Lighting Optimizer"],
+                flow: ["AI Heightmap Gen", "Road/Water Detection", "Auto Prop Scatter", "Initial Lighting Pass", "Nanite/LOD Optimization", "Performance Heatmap"],
+                comparison: [
+                    { dimension: "Medium Map", trad: "2-3 Weeks", ai: "3-5 Days", score: 85 },
+                    { dimension: "Lighting Pass", trad: "5 Days", ai: "4 Hours", score: 92 }
+                ],
+                value: [
+                    { label: "Map Gen", val: "4-6x", desc: "Faster creation" },
+                    { label: "Lighting", val: "10x", desc: "Faster first pass" },
+                    { label: "Scatter", val: "Auto", desc: "Automated set dressing" }
+                ],
+                roles: { ai: "Terrain / Scatter / Base Lighting", human: "Environmental Storytelling / Polish" }
+            },
+            "prod_char": {
+                title: "AI Character Production",
+                icon: <Users />,
+                phase_modules: [{ id: "prod_char_module", phase: "production", name: "AI Character Production" }],
+                headerDesc: "Rapidly producing character variants, costumes, and facial expressions.",
+                tools: ["Unreal MetaHuman", "Midjourney", "Stable Diffusion XL", "Ideogram", "Adobe Firefly", "Substance Painter AI", "UE5 MetaHuman Rig AI", "Rodin 3D"],
+                flow: ["Style Variants Gen", "Costume/Texture Gen", "Hairstyle/Accessory Gen", "Facial Library Gen", "UE5 Auto-Binding", "Skin/UV QA"],
+                comparison: [
+                    { dimension: "Full Skin", trad: "7-10 Days", ai: "1-2 Days", score: 88 },
+                    { dimension: "Hairstyle", trad: "3 Days", ai: "3 Hours", score: 90 },
+                    { dimension: "Facial Lib", trad: "2-3 Days", ai: "1 Hour", score: 96 }
+                ],
+                value: [
+                    { label: "Skins", val: "5-7x", desc: "Faster variants" },
+                    { label: "Hair", val: "24x", desc: "Faster creation" },
+                    { label: "Facial", val: "50x", desc: "Faster library gen" }
+                ],
+                roles: { ai: "Variation / Texture / Rigging", human: "Character Design / Appeal" }
+            },
+            "prod_qa": {
+                title: "AI QA & Diagnostics",
+                icon: <Search />,
+                phase_modules: [{ id: "prod_qa_module", phase: "production", name: "AI QA & Diagnostics" }],
+                headerDesc: "Automatically detecting rendering errors, performance issues, and crashes.",
+                tools: ["modl.ai", "Unreal Insights AI", "Unity Muse QA", "Backtrace AI", "Perforce Review AI", "Nav AI Inspector"],
+                flow: ["Auto Test Scenarios", "Perf/Light Monitoring", "Screenshot Classification", "Bug Categorization", "Auto-Ticket Push"],
+                comparison: [
+                    { dimension: "Manual Test", trad: "4-5 Hours", ai: "20 Mins", score: 93 },
+                    { dimension: "Perf Analysis", trad: "1 Day", ai: "5 Mins", score: 99 }
+                ],
+                value: [
+                    { label: "Testing", val: "12x", desc: "Faster pass" },
+                    { label: "Analysis", val: "100x", desc: "Faster diagnostics" },
+                    { label: "Coverage", val: "100%", desc: "Automated scenarios" }
+                ],
+                roles: { ai: "Execution / Detection / Logging", human: "Strategy / Complex Debugging" }
+            },
+
+            // --- QA & POLISH ---
+            "qa_automation": {
+                title: "AI Automation Testing",
+                icon: <Cpu />,
+                phase_modules: [{ id: "qa_auto_module", phase: "qa", name: "AI Automation Testing" }],
+                headerDesc: "Using AI agents to automatically run navigation, combat, and quest chains, replacing large volumes of repetitive manual testing.",
+                tools: ["modl.ai", "AI Gameplay Agents", "Auto Behavior Tree Gen", "Telemetry Parser", "Multimodal Capture"],
+                flow: ["AI Agents Auto-play", "Event Capture", "One-click Repro", "Auto-upload Logs/Video"],
+                comparison: [
+                    { dimension: "Flow Tests", trad: "Hundreds", ai: "5,000+ Cycles", score: 98 },
+                    { dimension: "Rare Bug Repro", trad: "Luck-based", ai: "High-frequency", score: 95 },
+                    { dimension: "Quest Validation", trad: "Step-by-step", ai: "Full Combinations", score: 92 }
+                ],
+                value: [
+                    { label: "Coverage", val: "5000+", desc: "Cycles Overnight" },
+                    { label: "Repro", val: "Auto", desc: "One-click Video" },
+                    { label: "Validation", val: "100%", desc: "Combinations" }
+                ],
+                roles: { ai: "Execution / Repro / Logging", human: "Test Strategy / Edge Case" }
+            },
+            "qa_clustering": {
+                title: "Bug Clustering & RCA",
+                icon: <FileJson />,
+                phase_modules: [{ id: "qa_cluster_module", phase: "qa", name: "Bug Clustering & RCA" }],
+                headerDesc: "Automatically organizing bugs, clustering duplicates, and inferring root causes.",
+                tools: ["LLM Log Vectorizer", "Error Pattern Model", "Root-Cause Reasoner", "Multimodal Debugger"],
+                flow: ["Log Vectorization", "Bug Clustering", "Severity Tagging", "Root Cause Inference", "Auto-Repro Steps"],
+                comparison: [
+                    { dimension: "Classification", trad: "Hours", ai: "Seconds", score: 99 },
+                    { dimension: "Duplicate Check", trad: "Manual", ai: "Auto De-dup", score: 95 },
+                    { dimension: "Root Cause", trad: "Half Day", ai: "Instant Hint", score: 90 }
+                ],
+                value: [
+                    { label: "Speed", val: "Secs", desc: "Clustering Time" },
+                    { label: "Precision", val: "High", desc: "Severity Tagging" },
+                    { label: "RCA", val: "Auto", desc: "Root Cause Hint" }
+                ],
+                roles: { ai: "Data Analysis / Pattern Rec", human: "Fixing / Verification" }
+            },
+            "qa_performance": {
+                title: "Performance & Visual QA",
+                icon: <Activity />,
+                phase_modules: [{ id: "qa_perf_module", phase: "qa", name: "Performance & Visual QA" }],
+                headerDesc: "Detecting FPS/GPU bottlenecks, lighting visibility issues, UI occlusion, and collision problems.",
+                tools: ["Performance Telemetry", "AI Screenshot QA", "Physics Predictor", "Heatmap Synthesizer"],
+                flow: ["Auto Data Capture", "Screenshot Analysis", "Collision Prediction", "FPS Hotspot Map"],
+                comparison: [
+                    { dimension: "Profiling", trad: "Scene-by-scene", ai: "Full-map Scan", score: 92 },
+                    { dimension: "Lighting Check", trad: "Visual Judgment", ai: "Auto Analysis", score: 90 },
+                    { dimension: "UI Occlusion", trad: "Manual Review", ai: "Batch Detection", score: 95 }
+                ],
+                value: [
+                    { label: "Hotspots", val: "Map", desc: "FPS/GPU" },
+                    { label: "Lighting", val: "Auto", desc: "Issue List" },
+                    { label: "UI", val: "Check", desc: "Occlusion Report" }
+                ],
+                roles: { ai: "Scanning / Heatmap Gen", human: "Optimization / Polish" }
+            },
+            "qa_balance": {
+                title: "Balance & Meta Tuning",
+                icon: <TrendingUp />,
+                phase_modules: [{ id: "qa_balance_module", phase: "qa", name: "Balance & Meta Tuning" }],
+                headerDesc: "Automatically identifying unbalanced characters/weapons using real match data and simulating trends.",
+                tools: ["Combat Sim Model", "LLM Meta Forecast", "Stat Analyzer (Global)"],
+                flow: ["Match Data Collect", "Outlier Tagging", "Meta Forecasting", "Tuning Suggestions"],
+                comparison: [
+                    { dimension: "Balance Analysis", trad: "Manual Review", ai: "Millions Entries", score: 96 },
+                    { dimension: "Param Tuning", trad: "Trial & Error", ai: "Optimized Props", score: 90 },
+                    { dimension: "Meta Predict", trad: "Experience", ai: "Simulation", score: 85 }
+                ],
+                value: [
+                    { label: "Data", val: "Millions", desc: "Analyzed" },
+                    { label: "Tuning", val: "Auto", desc: "Importable Configs" },
+                    { label: "Meta", val: "Future", desc: "State Simulation" }
+                ],
+                roles: { ai: "Big Data Analysis / Sim", human: "Design Philosophy / Fun" }
+            },
+            "qa_polish": {
+                title: "Polish Pass (AV)",
+                icon: <Wrench />,
+                phase_modules: [{ id: "qa_polish_module", phase: "qa", name: "Polish Pass (AV)" }],
+                headerDesc: "Automatically detecting and fixing 'last mile' polish issues for visuals, audio, and animation.",
+                tools: ["Lighting Analyzer", "Anim Cleanup Model", "Audio Loudness AI", "Camera Stabilizer", "Multimodal Checker"],
+                flow: ["Lighting Calib", "Anim Cleanup", "Audio Loudness", "Camera Smoothing", "Material Check"],
+                comparison: [
+                    { dimension: "Lighting Pass", trad: "Reworks", ai: "Single Scan", score: 90 },
+                    { dimension: "Anim Polish", trad: "Manual Fix", ai: "Auto Detect", score: 88 },
+                    { dimension: "Audio Balance", trad: "Case-by-case", ai: "One-click", score: 95 }
+                ],
+                value: [
+                    { label: "Polish", val: "Auto", desc: "Issue List" },
+                    { label: "Anim", val: "Clean", desc: "Jitter Free" },
+                    { label: "Audio", val: "Norm", desc: "Loudness Std" }
+                ],
+                roles: { ai: "Detection / Auto-fix", human: "Artistic Sign-off" }
+            },
+            "qa_dashboard": {
+                title: "Quality Dashboard",
+                icon: <Layout />,
+                phase_modules: [{ id: "qa_dash_module", phase: "qa", name: "Quality Dashboard" }],
+                headerDesc: "Aggregating all QA data into a single dashboard to support final quality decisions.",
+                tools: ["LLM Data Synthesizer", "Telemetry Parser", "Heatmap Generator"],
+                flow: ["Data Aggregation", "Health Score Gen", "Heatmap Creation", "Trend Forecasting"],
+                comparison: [
+                    { dimension: "Reporting", trad: "Manual Collation", ai: "One-click", score: 95 },
+                    { dimension: "Prediction", trad: "Experience", ai: "Data-driven", score: 90 },
+                    { dimension: "Multi-platform", trad: "Manual Comp", ai: "Auto-Merge", score: 92 }
+                ],
+                value: [
+                    { label: "View", val: "Global", desc: "Project Health" },
+                    { label: "Trend", val: "AI", desc: "Quality Forecast" },
+                    { label: "Index", val: "Live", desc: "Stability Score" }
+                ],
+                roles: { ai: "Aggregation / Visualization", human: "Release Decision" }
+            },
+
+            // --- LIVEOPS ---
+            "live_analytics": {
+                title: "AI Analytics & Forecasting",
+                icon: <BarChart />,
+                phase_modules: [{ id: "live_analytics_mod", phase: "liveops", name: "AI Analytics & Forecasting" }],
+                headerDesc: "Monitoring game health in real-time, generating predictive insights, and identifying abnormal behavior.",
+                tools: ["Snowflake", "BigQuery", "Kafka", "PyTorch", "Looker", "LLM Report Engine", "Segment", "Datadog ML"],
+                flow: ["Data Pipeline (ETL)", "Behavior Clustering", "Churn Prediction", "Economy Anomaly Detect", "Visual Report Gen"],
+                comparison: [
+                    { dimension: "Analysis Speed", trad: "Days", ai: "Real-time", score: 98 },
+                    { dimension: "Churn Predict", trad: "Reactive", ai: "Proactive", score: 95 },
+                    { dimension: "Reporting", trad: "Manual", ai: "Automated", score: 92 }
+                ],
+                value: [
+                    { label: "Retention", val: "+15%", desc: "Early Intervention" },
+                    { label: "Accuracy", val: "90%", desc: "Churn Prediction" },
+                    { label: "Reports", val: "Auto", desc: "Weekly Generation" }
+                ],
+                roles: { ai: "Data Processing / Pattern Rec", human: "Business Strategy / Action" }
+            },
+            "live_events": {
+                title: "AI Live Event Design",
+                icon: <Calendar />,
+                phase_modules: [{ id: "live_events_mod", phase: "liveops", name: "AI Live Event Design" }],
+                headerDesc: "Rapidly generating event themes, reward curves, and task chains for a steady content cycle.",
+                tools: ["OpenAI GPT-5", "Gemini 3.0", "Claude 3.7", "AI Task Orchestrator", "Reward Curve Simulator", "Figma AI"],
+                flow: ["Theme Gen", "Reward Simulation", "Difficulty Tuning", "UI Mockup Gen", "Script Export"],
+                comparison: [
+                    { dimension: "Event Ideation", trad: "Brainstorming", ai: "Prompt Graph", score: 90 },
+                    { dimension: "Balancing", trad: "Spreadsheet", ai: "Simulation", score: 95 }
+                ],
+                value: [
+                    { label: "Cadence", val: "2x", desc: "Event Frequency" },
+                    { label: "Balance", val: "Auto", desc: "Reward Curves" },
+                    { label: "Drafting", val: "Mins", desc: "Time to Draft" }
+                ],
+                roles: { ai: "Ideation / Simulation / Drafting", human: "Event Operation / Configuration" }
+            },
+            "live_assets": {
+                title: "AI Live Asset Gen",
+                icon: <Box />,
+                phase_modules: [{ id: "live_assets_mod", phase: "liveops", name: "AI Live Asset Gen" }],
+                headerDesc: "Consistently producing high volumes of KV, posters, videos, and UI assets weekly.",
+                tools: ["SDXL", "Midjourney v7", "Rodin 3D", "Runway Gen-3", "Figma AI", "Photoshop AI", "LoRA Models"],
+                flow: ["Multimodal Gen (Image->UI)", "3D Prototyping", "Video Editing", "Style Consistency Check", "Batch Render"],
+                comparison: [
+                    { dimension: "KV Production", trad: "1 Week", ai: "1 Day", score: 95 },
+                    { dimension: "UI Assets", trad: "Manual", ai: "Batch Gen", score: 92 }
+                ],
+                value: [
+                    { label: "Volume", val: "High", desc: "Asset Output" },
+                    { label: "Consistency", val: "100%", desc: "Style Anchoring" },
+                    { label: "Speed", val: "10x", desc: "Turnaround" }
+                ],
+                roles: { ai: "Batch Production / Adaptation", human: "Art Review / Final Polish" }
+            },
+            "live_content": {
+                title: "AI Content & Community",
+                icon: <MessageCircle />,
+                phase_modules: [{ id: "live_content_mod", phase: "liveops", name: "AI Content & Community" }],
+                headerDesc: "Rapidly producing announcements, localized text, and monitoring community sentiment.",
+                tools: ["OpenAI GPT-5", "DeepL", "BERT Sentiment", "Zapier", "Discord/Twitter APIs"],
+                flow: ["LLM Content Gen", "Multi-lang Localization", "Sentiment Monitor", "Crisis Template Gen", "Auto-Posting"],
+                comparison: [
+                    { dimension: "Localization", trad: "Days", ai: "Hours", score: 95 },
+                    { dimension: "Sentiment", trad: "Manual Check", ai: "Real-time Monitor", score: 98 }
+                ],
+                value: [
+                    { label: "Response", val: "Fast", desc: "Crisis Management" },
+                    { label: "Languages", val: "All", desc: "Simultaneous Launch" },
+                    { label: "Insight", val: "Deep", desc: "Topic Modeling" }
+                ],
+                roles: { ai: "Drafting / Translation / Monitoring", human: "Community Manager / Empathy" }
+            },
+            "live_money": {
+                title: "AI Monetization",
+                icon: <Coins />,
+                phase_modules: [{ id: "live_money_mod", phase: "liveops", name: "AI Monetization" }],
+                headerDesc: "Implementing dynamic pricing, personalized bundles, and revenue forecasting.",
+                tools: ["Gradient Boosting", "RNN / Graph NN", "Economy Balancer", "Looker"],
+                flow: ["LTV Prediction", "Bundle Rec", "Dynamic Pricing", "Gacha Sim", "Inflation Detect"],
+                comparison: [
+                    { dimension: "Pricing", trad: "Static", ai: "Dynamic", score: 90 },
+                    { dimension: "Targeting", trad: "Segmented", ai: "Personalized", score: 95 }
+                ],
+                value: [
+                    { label: "ARPPU", val: "+20%", desc: "Revenue Lift" },
+                    { label: "Economy", val: "Stable", desc: "Inflation Control" },
+                    { label: "Offers", val: "1:1", desc: "Personalization" }
+                ],
+                roles: { ai: "Prediction / Recommendation", human: "Economy Design / Ethics" }
+            },
+            "live_crm": {
+                title: "AI Player Support",
+                icon: <HeartHandshake />,
+                phase_modules: [{ id: "live_crm_mod", phase: "liveops", name: "AI Player Support" }],
+                headerDesc: "Boosting customer support efficiency, automating retention, and enhancing VIP servicing.",
+                tools: ["LLM Chatbot", "Retrieval QA", "Braze", "CleverTap", "Behavioral Graph Models"],
+                flow: ["Auto-Support (Chatbot)", "Churn Prediction", "Risk Detection", "Recall Bundles", "VIP Auto-Comms"],
+                comparison: [
+                    { dimension: "Support", trad: "Human Agent", ai: "AI Agent", score: 92 },
+                    { dimension: "Risk Detect", trad: "Reports", ai: "Behavior Pattern", score: 95 }
+                ],
+                value: [
+                    { label: "Resolved", val: "70%", desc: "Auto-Resolution" },
+                    { label: "Churn", val: "-10%", desc: "Reduction" },
+                    { label: "VIP", val: "High", desc: "Satisfaction" }
+                ],
+                roles: { ai: "First-line Support / Detection", human: "VIP Manager / Escalation" }
+            }
+        };
+
+        /* --- BACKGROUND PARTICLES --- */
+        // 替换原有的 createSoftTexture，改为生成游戏图标纹理
+        const createGameIconTexture = (icon) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64; // 增加分辨率以清晰显示图标
+            const ctx = canvas.getContext('2d');
+            
+            // 绘制图标
+            ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'white';
+            ctx.fillText(icon, 32, 32);
+            
+            // 创建纹理
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        };
+
+        const ThreeBackground = ({ mode }) => {
+            const containerRef = useRef(null);
+            const mouseRef = useRef({ x: 10000, y: 10000 }); 
+            const targetColorRef = useRef(new THREE.Color(0x67e8f9));
+
+            useEffect(() => {
+                let hex = 0x67e8f9;
+                switch(mode) {
+                    case 'art': hex = 0xf472b6; break;
+                    case 'animation': hex = 0xfacc15; break;
+                    case 'qa': hex = 0x4ade80; break;
+                    case 'design': hex = 0xc084fc; break;
+                    case 'audio': hex = 0x3b82f6; break;
+                }
+                targetColorRef.current.setHex(hex);
+            }, [mode]);
+
+            useEffect(() => {
+                if (!containerRef.current) return;
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                const scene = new THREE.Scene();
+                scene.fog = new THREE.FogExp2(0x020617, 0.0015); 
+                const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+                camera.position.z = 50;
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+                renderer.setSize(width, height);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                containerRef.current.appendChild(renderer.domElement);
+
+                // 定义游戏相关的图标
+                const icons = ['🎮', '💻', '🖱️', '⚔️', '👾', '🕹️', '🎲']; 
+                const totalParticles = 4000; // 保持总密度相似
+                const particlesPerIcon = Math.floor(totalParticles / icons.length);
+                
+                const particleSystems = [];
+
+                // 为每种图标创建一个粒子系统
+                icons.forEach(icon => {
+                    const texture = createGameIconTexture(icon);
+                    const geometry = new THREE.BufferGeometry();
+                    const positions = new Float32Array(particlesPerIcon * 3);
+                    const originalPositions = [];
+                    const velocities = [];
+
+                    for(let i = 0; i < particlesPerIcon; i++) {
+                        const x = (Math.random() - 0.5) * 400;
+                        const y = (Math.random() - 0.5) * 300;
+                        const z = (Math.random() - 0.5) * 200; 
+                        positions[i*3] = x; positions[i*3+1] = y; positions[i*3+2] = z;
+                        originalPositions.push(x, y, z); // Store as flat x,y,z for later access
+                        velocities.push({ x:0, y:0, z:0 });
+                    }
+                    
+                    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    // 将原始位置和速度存储在 userData 中以便在动画循环中使用
+                    geometry.userData = { originalPositions, velocities };
+
+                    const material = new THREE.PointsMaterial({ 
+                        color: 0xffffff, 
+                        size: 2.0, // 稍微调大一点以便看清图标
+                        map: texture, 
+                        transparent: true, 
+                        opacity: 0.7, 
+                        blending: THREE.AdditiveBlending, 
+                        depthWrite: false 
+                    });
+                    
+                    const points = new THREE.Points(geometry, material);
+                    scene.add(points);
+                    particleSystems.push(points);
+                });
+
+                const onMouseMove = (e) => {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouseRef.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                };
+                window.addEventListener('mousemove', onMouseMove);
+                const handleResize = () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); };
+                window.addEventListener('resize', handleResize);
+
+                let frameId;
+                const animate = () => {
+                    frameId = requestAnimationFrame(animate);
+                    
+                    // 更新所有粒子系统
+                    particleSystems.forEach(points => {
+                        points.material.color.lerp(targetColorRef.current, 0.05);
+                        const geometry = points.geometry;
+                        const positions = geometry.attributes.position.array;
+                        const { originalPositions, velocities } = geometry.userData;
+                        const mousePos = new THREE.Vector3(mouseRef.current.x, mouseRef.current.y, 0);
+                        
+                        // 遍历该系统中的所有粒子
+                        for(let i = 0; i < velocities.length; i++) {
+                            const idx = i*3;
+                            const px = positions[idx]; const py = positions[idx+1]; const pz = positions[idx+2];
+                            // 从 userData 中获取原始位置 (每3个一组)
+                            const ox = originalPositions[idx]; const oy = originalPositions[idx+1]; const oz = originalPositions[idx+2];
+                            const v = velocities[i];
+                            
+                            // Physics: Mouse Attraction
+                            const distSq = (px-mousePos.x)**2 + (py-mousePos.y)**2 + (pz-mousePos.z)**2;
+                            if (distSq < 3600) { 
+                                const dist = Math.sqrt(distSq);
+                                const force = (60 - dist) / 60;
+                                v.x += (mousePos.x - px) * force * 0.005;
+                                v.y += (mousePos.y - py) * force * 0.005;
+                                v.z += (mousePos.z - pz) * force * 0.005;
+                            }
+                            
+                            // Physics: Spring back
+                            v.x += (ox - px) * 0.015; v.y += (oy - py) * 0.015; v.z += (oz - pz) * 0.015;
+                            // Physics: Damping
+                            v.x *= 0.90; v.y *= 0.90; v.z *= 0.90;
+                            
+                            positions[idx] += v.x; positions[idx+1] += v.y; positions[idx+2] += v.z;
+                        }
+                        geometry.attributes.position.needsUpdate = true;
+                    });
+
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                return () => { 
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('resize', handleResize);
+                    cancelAnimationFrame(frameId);
+                    if (containerRef.current) containerRef.current.removeChild(renderer.domElement);
+                    renderer.dispose();
+                }
+            }, []); 
+            return <div ref={containerRef} className="fixed top-0 left-0 w-full h-full -z-10 bg-slate-950" />;
+        };
+
+        const getModulesByPhase = (phaseId) => {
+            const modules = [];
+            Object.entries(DOMAINS_DATA).forEach(([domainKey, data]) => {
+                data.phase_modules.forEach(mod => {
+                    if (mod.phase === phaseId) {
+                        modules.push({ ...mod, domainKey, icon: data.icon, domainTitle: data.title });
+                    }
+                });
+            });
+            return modules;
+        };
+
+        /* --- THREE.JS GALAXY COMPONENT --- */
+        const GalaxyScene = ({ currentPhaseIdx, onSelectModule, onChangePhase, hoverPhaseIdx, onHoverModule, onHoverPhase }) => {
+            const containerRef = useRef(null);
+            const requestRef = useRef();
+            const planetGroupRef = useRef(null);
+            const satelliteGroupRef = useRef(null);
+            const satellitesRef = useRef([]);
+            const mouseRef = useRef({ x: 0, y: 0 });
+            const raycasterRef = useRef(new THREE.Raycaster());
+            const cameraRef = useRef(null);
+            
+            const callbacksRef = useRef({ onSelectModule, onChangePhase, onHoverModule, onHoverPhase });
+            const stateRef = useRef({ currentPhaseIdx, hoverPhaseIdx, lastHoveredModuleId: null });
+            
+            // Correctly define satelliteGroupRef here
+            const localSatelliteGroupRef = useRef(null);
+
+            // Update refs when props change
+            useEffect(() => {
+                stateRef.current.currentPhaseIdx = currentPhaseIdx;
+                stateRef.current.hoverPhaseIdx = hoverPhaseIdx;
+                callbacksRef.current = { onSelectModule, onChangePhase, onHoverModule, onHoverPhase };
+            }, [currentPhaseIdx, hoverPhaseIdx, onSelectModule, onChangePhase, onHoverModule, onHoverPhase]);
+
+            // Helper to create specific satellite geometry based on domain type
+            const createSatelliteMesh = (domainKey, color) => {
+                let geo;
+                if (domainKey === 'art' || domainKey === '3d_asset' || domainKey === 'prod_3d' || domainKey === 'prod_char' || domainKey === 'live_assets') {
+                    geo = new THREE.IcosahedronGeometry(1.5, 0); 
+                } else if (domainKey === 'design' || domainKey === 'proc_gen' || domainKey === 'docs' || domainKey === 'prod_level' || domainKey.includes('qa_automation') || domainKey === 'live_events') {
+                    geo = new THREE.BoxGeometry(2.2, 2.2, 2.2);
+                } else if (domainKey === 'audio') geo = new THREE.TorusGeometry(1.2, 0.4, 8, 16);
+                else if (domainKey === 'animation' || domainKey === 'npc' || domainKey === 'code_proto' || domainKey === 'prod_anim' || domainKey.includes('qa_perf')) {
+                    geo = new THREE.OctahedronGeometry(1.5, 0); 
+                } else if (domainKey === 'qa' || domainKey === 'tools' || domainKey === 'localization' || domainKey === 'research' || domainKey === 'prod_qa' || domainKey.includes('qa_polish')) {
+                    geo = new THREE.BoxGeometry(1.8, 1.8, 1.8); 
+                } else if (domainKey === 'monetization' || domainKey === 'live_money' || domainKey === 'live_analytics' || domainKey === 'market' || domainKey.includes('qa_cluster') || domainKey.includes('qa_dash')) {
+                    geo = new THREE.ConeGeometry(1.2, 2.5, 4);
+                } else {
+                    geo = new THREE.SphereGeometry(1.2, 16, 16);
+                }
+                
+                const isWireframe = (domainKey.includes('qa') || domainKey === 'tools' || domainKey === 'research' || domainKey === 'prod_qa');
+                const mat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff, emissive: color, emissiveIntensity: 0.5, flatShading: true, roughness: 0.3, metalness: 0.8, wireframe: isWireframe
+                });
+                return new THREE.Mesh(geo, mat);
+            };
+
+            useEffect(() => {
+                if (!containerRef.current) return;
+
+                const width = containerRef.current.clientWidth || window.innerWidth;
+                const height = containerRef.current.clientHeight || window.innerHeight;
+                const scene = new THREE.Scene();
+                
+                const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+                camera.position.set(0, 15, 85); 
+                camera.lookAt(0, 0, 0);
+                cameraRef.current = camera;
+
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setSize(width, height);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                containerRef.current.appendChild(renderer.domElement);
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+                scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                dirLight.position.set(20, 20, 30);
+                scene.add(dirLight);
+                const pointLight = new THREE.PointLight(PHASES_CONFIG[0].color, 1.5, 100);
+                pointLight.position.set(0, 0, 15);
+                scene.add(pointLight);
+                
+                const allPlanetsGroup = new THREE.Group();
+                scene.add(allPlanetsGroup);
+                planetGroupRef.current = allPlanetsGroup;
+
+                PHASES_CONFIG.forEach((cfg, idx) => {
+                    const pGroup = new THREE.Group();
+                    pGroup.position.set(cfg.x, 0, 0);
+                    pGroup.userData = { id: idx, name: cfg.name };
+
+                    let mesh;
+                    if (cfg.type === 'brain') {
+                        mesh = new THREE.Mesh(
+                            new THREE.TorusKnotGeometry(3.5, 1.2, 100, 16, 3, 4),
+                            new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.5, metalness: 0.1, emissive: 0x550055, emissiveIntensity: 0.2 })
+                        );
+                        pGroup.add(mesh);
+                    } else if (cfg.type === 'construct') {
+                        mesh = new THREE.Mesh(
+                            new THREE.IcosahedronGeometry(4.5, 0),
+                            new THREE.MeshStandardMaterial({ color: cfg.color, flatShading: true, roughness: 0.8, metalness: 0.3 })
+                        );
+                        const cage = new THREE.Mesh(
+                            new THREE.IcosahedronGeometry(5.5, 1),
+                            new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.2 })
+                        );
+                        cage.userData = { rotateSpeed: -0.002 };
+                        pGroup.add(mesh); pGroup.add(cage);
+                    } else if (cfg.type === 'perfect') {
+                        mesh = new THREE.Mesh(
+                            new THREE.SphereGeometry(5.0, 64, 64),
+                            new THREE.MeshPhysicalMaterial({ 
+                                color: 0x10b981, 
+                                roughness: 0.0, 
+                                metalness: 0.1,
+                                transmission: 0.2, 
+                                thickness: 2.0,
+                                clearcoat: 1.0,
+                                clearcoatRoughness: 0.0,
+                                iridescence: 1.0, 
+                                iridescenceIOR: 2.2,
+                                emissive: 0x004433,
+                                emissiveIntensity: 0.4
+                            })
+                        );
+                        
+                        const ringGeo = new THREE.TorusGeometry(8.0, 0.15, 16, 100);
+                        const ringMat = new THREE.MeshStandardMaterial({ 
+                            color: 0x6ee7b7, 
+                            emissive: 0x2dd4bf,
+                            emissiveIntensity: 0.5,
+                            roughness: 0.2 
+                        });
+                        const ring1 = new THREE.Mesh(ringGeo, ringMat);
+                        ring1.rotation.x = Math.PI / 2.1;
+                        ring1.rotation.y = Math.PI / 8;
+
+                        const ring2 = new THREE.Mesh(
+                            new THREE.TorusGeometry(10.0, 0.05, 16, 100),
+                            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 })
+                        );
+                        ring2.rotation.x = Math.PI / 1.9;
+                        ring2.rotation.y = -Math.PI / 8;
+
+                        pGroup.add(mesh);
+                        pGroup.add(ring1);
+                        pGroup.add(ring2);
+                    } else if (cfg.type === 'nexus') {
+                         mesh = new THREE.Mesh(new THREE.TorusKnotGeometry(3.8, 1.2, 100, 16), new THREE.MeshNormalMaterial({ flatShading: false }));
+                         const ring1 = new THREE.Mesh(new THREE.TorusGeometry(7.5, 0.1, 16, 100), new THREE.MeshBasicMaterial({ color: cfg.color }));
+                         ring1.rotation.x = Math.PI/2.5;
+                         pGroup.add(mesh); pGroup.add(ring1);
+                    }
+                    allPlanetsGroup.add(pGroup);
+                });
+
+                // Satellites Group
+                const satelliteGroup = new THREE.Group();
+                scene.add(satelliteGroup);
+                localSatelliteGroupRef.current = satelliteGroup;
+                satellitesRef.current = [];
+
+                // Initial Build
+                const rebuildSatellites = (phaseId, color) => {
+                    if (!localSatelliteGroupRef.current) return;
+                    
+                    // Clear existing
+                    while(localSatelliteGroupRef.current.children.length > 0){ 
+                        const obj = localSatelliteGroupRef.current.children[0];
+                        localSatelliteGroupRef.current.remove(obj);
+                        if (obj.geometry) obj.geometry.dispose();
+                        if (obj.material) obj.material.dispose();
+                    }
+                    satellitesRef.current = [];
+                    
+                    const mods = getModulesByPhase(phaseId);
+                    mods.forEach((mod, i) => {
+                        const angle = (i / mods.length) * Math.PI * 2;
+                        const radius = 26; 
+                        const x = Math.cos(angle) * radius;
+                        const z = Math.sin(angle) * radius;
+                        
+                        const satMesh = createSatelliteMesh(mod.domainKey, color);
+                        satMesh.position.set(x, 0, z);
+                        satMesh.userData = { 
+                            id: mod.id, 
+                            angle: angle, 
+                            radius: radius, 
+                            speed: 0.003, // Increased speed from 0.0005 to 0.003
+                            name: mod.name, 
+                            domainTitle: mod.domainTitle 
+                        };
+                        
+                        const orbitGeo = new THREE.RingGeometry(radius - 0.1, radius + 0.1, 128);
+                        const orbitMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.05 });
+                        const orbitRing = new THREE.Mesh(orbitGeo, orbitMat);
+                        orbitRing.rotation.x = Math.PI / 2;
+                        localSatelliteGroupRef.current.add(orbitRing);
+
+                        localSatelliteGroupRef.current.add(satMesh);
+                        satellitesRef.current.push(satMesh);
+                    });
+                };
+
+                rebuildSatellites(PHASES_CONFIG[0].id, PHASES_CONFIG[0].color);
+
+                const raycaster = new THREE.Raycaster();
+                
+                const onMouseMove = (e) => {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouseRef.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                };
+
+                const onClick = () => {
+                    raycaster.setFromCamera(mouseRef.current, camera);
+                    const satIntersects = raycaster.intersectObjects(satellitesRef.current);
+                    if (satIntersects.length > 0) {
+                        playClickSound(); // Add sound here
+                        callbacksRef.current.onSelectModule(satIntersects[0].object.userData.id);
+                        return;
+                    }
+                    const planetIntersects = raycaster.intersectObjects(allPlanetsGroup.children, true);
+                    if (planetIntersects.length > 0) {
+                        let target = planetIntersects[0].object;
+                        while(target.parent !== allPlanetsGroup) { target = target.parent; }
+                        playClickSound(); // Add sound here
+                        callbacksRef.current.onChangePhase(target.userData.id); 
+                    }
+                };
+
+                const resizeObserver = new ResizeObserver((entries) => {
+                    for (let entry of entries) {
+                        const { width, height } = entry.contentRect;
+                        if (width > 0 && height > 0) {
+                            camera.aspect = width / height;
+                            camera.updateProjectionMatrix();
+                            renderer.setSize(width, height);
+                        }
+                    }
+                });
+                resizeObserver.observe(containerRef.current);
+
+                containerRef.current.addEventListener('mousemove', onMouseMove);
+                containerRef.current.addEventListener('click', onClick);
+
+                let lastRenderedPhaseIdx = 0;
+
+                const animate = () => {
+                    requestRef.current = requestAnimationFrame(animate);
+                    const time = Date.now() * 0.001;
+                    const { currentPhaseIdx, hoverPhaseIdx } = stateRef.current;
+
+                    if (lastRenderedPhaseIdx !== currentPhaseIdx) {
+                        lastRenderedPhaseIdx = currentPhaseIdx;
+                        const p = PHASES_CONFIG[currentPhaseIdx];
+                        rebuildSatellites(p.id, p.color);
+                        pointLight.color.setHex(p.color);
+                    }
+
+                    if (planetGroupRef.current) {
+                        // ... existing planet rotation logic ...
+                        const activePlanetX = PHASES_CONFIG[currentPhaseIdx].x;
+                        const targetGroupX = -activePlanetX;
+                        planetGroupRef.current.position.x += (targetGroupX - planetGroupRef.current.position.x) * 0.08;
+
+                        raycaster.setFromCamera(mouseRef.current, camera);
+                        const planetIntersects = raycaster.intersectObjects(allPlanetsGroup.children, true);
+                        
+                        let hoveredPlanetId = -1;
+                        if (planetIntersects.length > 0) {
+                             let target = planetIntersects[0].object;
+                             while(target.parent !== allPlanetsGroup) target = target.parent;
+                             hoveredPlanetId = target.userData.id;
+                             document.body.style.cursor = 'pointer';
+                             if (callbacksRef.current.onHoverPhase && hoveredPlanetId !== currentPhaseIdx) {
+                                 callbacksRef.current.onHoverPhase(hoveredPlanetId);
+                             }
+                        } else {
+                            if (callbacksRef.current.onHoverPhase && hoverPhaseIdx !== null) {
+                                callbacksRef.current.onHoverPhase(null);
+                            }
+
+                            const satIntersects = raycaster.intersectObjects(satellitesRef.current);
+                            document.body.style.cursor = satIntersects.length > 0 ? 'pointer' : 'default';
+                        }
+
+                        planetGroupRef.current.children.forEach((pGroup, i) => {
+                            // Increased planet rotation speed
+                            pGroup.rotation.y += 0.01;
+                            
+                            pGroup.children.forEach(child => {
+                                if (child.userData.rotateSpeed) {
+                                    child.rotation.y += child.userData.rotateSpeed;
+                                    child.rotation.x += child.userData.rotateSpeed * 0.5;
+                                }
+                            });
+                            if (pGroup.userData.pulse) {
+                                const scale = 1 + Math.sin(time * 3) * 0.1;
+                                if (pGroup.children[1]) pGroup.children[1].scale.set(scale, scale, scale);
+                            }
+
+                            let targetScale = i === currentPhaseIdx ? 1.0 : 0.8;
+                            let targetOpacity = i === currentPhaseIdx ? 1.0 : 0.3; 
+                            
+                            if (hoveredPlanetId !== -1) {
+                                if (i === hoveredPlanetId) {
+                                    targetScale = 1.2; 
+                                    targetOpacity = 1.0;
+                                    pGroup.rotation.y += 0.02; 
+                                } else {
+                                    targetScale = 0.6; 
+                                    targetOpacity = 0.1; 
+                                }
+                            } else if (hoverPhaseIdx !== null) {
+                                if (i === hoverPhaseIdx) {
+                                    targetScale = 1.2;
+                                    targetOpacity = 1.0;
+                                } else {
+                                    targetScale = 0.6;
+                                    targetOpacity = 0.1;
+                                }
+                            }
+
+                            pGroup.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+                            
+                            pGroup.traverse(child => {
+                                if (child.isMesh && child.material) {
+                                    if (child.material.emissive) {
+                                        child.material.emissiveIntensity = THREE.MathUtils.lerp(child.material.emissiveIntensity, targetOpacity * 0.8, 0.1);
+                                    }
+                                }
+                            });
+                        });
+                    }
+
+                    // Check if any satellite is hovered to determine if we should pause
+                    const isHoveringAnySatellite = stateRef.current.lastHoveredModuleId !== null;
+
+                    satellitesRef.current.forEach((sat) => {
+                        // Only rotate if NOT hovering any satellite
+                        if (!isHoveringAnySatellite) {
+                            sat.userData.angle += sat.userData.speed;
+                            sat.rotation.x += 0.01; 
+                            sat.rotation.y += 0.01; 
+                        }
+
+                        sat.position.x = Math.cos(sat.userData.angle) * sat.userData.radius;
+                        sat.position.z = Math.sin(sat.userData.angle) * sat.userData.radius;
+                        
+                        const satIntersects = raycaster.intersectObject(sat);
+                        if (satIntersects.length > 0) {
+                             sat.scale.lerp(new THREE.Vector3(1.5, 1.5, 1.5), 0.2);
+                             sat.material.emissiveIntensity = 2.0;
+                             if (stateRef.current.lastHoveredModuleId !== sat.userData.id) {
+                                 stateRef.current.lastHoveredModuleId = sat.userData.id;
+                                 if (callbacksRef.current.onHoverModule) callbacksRef.current.onHoverModule(sat.userData);
+                             }
+                        } else {
+                             sat.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+                             sat.material.emissiveIntensity = 0.5;
+                        }
+                    });
+                    
+                    // ... existing cleanup logic ...
+                    if (raycaster.intersectObjects(satellitesRef.current).length === 0 && stateRef.current.lastHoveredModuleId !== null) {
+                        stateRef.current.lastHoveredModuleId = null;
+                        if (callbacksRef.current.onHoverModule) callbacksRef.current.onHoverModule(null);
+                    }
+
+                    const mX = (mouseRef.current.x / window.innerWidth - 0.5) * 2;
+                    const mY = (mouseRef.current.y / window.innerHeight - 0.5) * 2;
+                    camera.position.x += (mX * 5 - camera.position.x) * 0.05;
+                    camera.position.y += ((-mY * 5 + 15) - camera.position.y) * 0.05;
+                    camera.lookAt(0, 0, 0);
+
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                return () => {
+                    resizeObserver.disconnect();
+                    if (containerRef.current) {
+                        containerRef.current.removeEventListener('mousemove', onMouseMove);
+                        containerRef.current.removeEventListener('click', onClick);
+                        if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+                    }
+                    cancelAnimationFrame(requestRef.current);
+                };
+            }, []); 
+
+            return <div ref={containerRef} className="w-full h-[70vh] relative z-10" />; 
+        };
+
+        /* --- HUD NAVBAR --- */
+        const NavBar = ({ setPage, currentPage }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const links = [
+                { id: 'home', label: 'MAIN MENU' },
+                { id: 'pipelines', label: 'MISSION SELECT' }, 
+                { id: 'articles', label: 'LOGS' },
+                { id: 'about', label: 'PLAYER PROFILE' }, 
+                { id: 'portfolio', label: 'PORTFOLIO' } 
+            ];
+
+            return (
+                <motion.nav 
+                initial={{ y: -100 }} animate={{ y: 0 }} transition={{ type: 'spring', stiffness: 100 }}
+                className="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-cyan-900/50"
+                >
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                    <div className="flex items-center cursor-pointer group" onClick={() => setPage('home')}>
+                        <div className="relative">
+                        <Brain className="h-8 w-8 text-cyan-400 group-hover:animate-pulse" />
+                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                        </span>
+                        </div>
+                        <div className="ml-3 flex flex-col">
+                        <span className="text-xl font-bold text-white tracking-widest font-mono group-hover:text-cyan-400 transition-colors">AI GAMEWORKS</span>
+                        <span className="text-xs text-cyan-500/70 tracking-[0.2em] font-mono">SYSTEM ONLINE</span>
+                        </div>
+                    </div>
+                    
+                    <div className="hidden md:block">
+                        <div className="ml-10 flex items-baseline space-x-1">
+                        {links.map((link) => (
+                            <button
+                            key={link.id}
+                            onClick={() => setPage(link.id)}
+                            className={`relative px-4 py-2 text-sm font-bold font-mono tracking-wider transition-all overflow-hidden group ${
+                                currentPage === link.id 
+                                ? 'text-cyan-900 bg-cyan-400 clip-path-polygon' 
+                                : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800'
+                            }`}
+                            style={{ clipPath: 'polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%)' }}
+                            >
+                            {link.label}
+                            {currentPage === link.id && (
+                                <motion.div layoutId="underline" className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-200" />
+                            )}
+                            </button>
+                        ))}
+                        </div>
+                    </div>
+                    <div className="-mr-2 flex md:hidden">
+                        <button onClick={() => setIsOpen(!isOpen)} className="text-cyan-400 p-2 border border-cyan-900 rounded bg-slate-800/50">
+                        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
+                    </div>
+                    </div>
+                </div>
+                {/* Mobile Menu */}
+                {isOpen && (
+                    <div className="md:hidden bg-slate-900 border-b border-cyan-900/50">
+                        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                            {links.map((link) => (
+                                <button
+                                    key={link.id}
+                                    onClick={() => { setPage(link.id); setIsOpen(false); }}
+                                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800"
+                                >
+                                    {link.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                </motion.nav>
+            );
+        };
+
+        /* --- PAGE TRANSITION --- */
+        const PageTransition = ({ children, title, subtitle }) => {
+            return (
+                <motion.div
+                initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 1.05, filter: "blur(5px)" }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="min-h-screen pt-20"
+                >
+                <motion.div 
+                    initial={{ scaleX: 0 }} 
+                    animate={{ scaleX: 1 }} 
+                    transition={{ duration: 0.6, ease: "circOut" }}
+                    className="fixed top-16 left-0 h-0.5 w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 origin-left z-40" 
+                />
+                {title && (
+                    <div className="max-w-7xl mx-auto px-4 mb-8 flex items-center justify-between border-b border-slate-700/50 pb-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-xs font-mono text-cyan-500 tracking-widest uppercase mb-1">
+                        <Activity className="w-3 h-3" /> System Status: Normal
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                        <span className="text-cyan-400">/</span> {title}
+                        </h1>
+                    </div>
+                    {subtitle && (
+                        <div className="hidden md:block text-right">
+                        <div className="text-sm text-slate-500 font-mono uppercase tracking-wider">Current Objective</div>
+                        <div className="text-base text-slate-300 font-semibold max-w-xs">{subtitle}</div>
+                        </div>
+                    )}
+                    </div>
+                )}
+                {children}
+                </motion.div>
+            );
+        };
+
+        /* --- PAGES --- */
+
+        // 1. Home
+        const Home = ({ setPage }) => {
+            return (
+                <PageTransition>
+                <div className="flex flex-col justify-center items-center min-h-[80vh] text-center px-4 relative">
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(10,20,30,0)_1px,transparent_1px),linear-gradient(90deg,rgba(10,20,30,0)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-20 pointer-events-none" />
+
+                    <motion.div 
+                    initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
+                    className="inline-block px-4 py-1 rounded-full border border-cyan-500/30 bg-cyan-950/30 text-cyan-400 text-xs font-mono mb-8"
+                    >
+                    SYSTEM VERSION 2.0.4 // ONLINE
+                    </motion.div>
+
+                    <motion.h1 
+                    className="text-6xl md:text-8xl font-black text-white mb-4 tracking-tighter cursor-default select-none"
+                    initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", duration: 1 }}
+                    >
+                    <motion.span 
+                        className="inline-block"
+                        whileHover={{ 
+                        color: "#22d3ee", 
+                        x: -15, 
+                        rotate: -5,
+                        textShadow: "2px 2px 0px rgba(34,211,238,0.8)"
+                        }}
+                    >
+                        AI
+                    </motion.span>
+                    
+                    <span className="inline-block w-4" /> 
+
+                    <motion.span 
+                        className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-violet-500"
+                        whileHover={{ 
+                        scale: 1.1,
+                        filter: "drop-shadow(0 0 15px rgba(139,92,246,0.6)) hue-rotate(60deg)" 
+                        }}
+                        transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                    >
+                        GAMEWORKS
+                    </motion.span>
+                    </motion.h1>
+                    
+                    <motion.p 
+                    className="text-xl md:text-2xl text-slate-400 font-light mb-12 tracking-wide"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+                    >
+                    Revolutionizing Game Production Protocols
+                    <span className="block text-base text-slate-600 mt-2 font-mono uppercase">By Andrew Zhang</span>
+                    </motion.p>
+
+                    <div className="flex flex-col sm:flex-row gap-6">
+                    <motion.button 
+                        whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(6,182,212,0.5)" }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                            playClickSound(); // Add sound here
+                            setPage('pipelines');
+                        }}
+                        className="group relative px-10 py-5 bg-cyan-600 text-white font-bold text-lg uppercase tracking-wider overflow-hidden clip-path-button"
+                        style={{ clipPath: 'polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%)' }}
+                    >
+                        <span className="relative z-10 flex items-center gap-3">
+                        <Play className="fill-current w-5 h-5" /> Start Mission
+                        </span>
+                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                    </motion.button>
+                    
+                    
+                    </div>
+                </div>
+                </PageTransition>
+            );
+        };
+
+        // 2. Player Profile
+        const PlayerProfile = () => {
+            return (
+                <PageTransition title="Player Profile">
+                <div className="max-w-5xl mx-auto px-4 pb-20">
+                    <div className="grid md:grid-cols-3 gap-8 mb-12">
+                    <div className="col-span-1 bg-slate-800/80 border border-cyan-500/50 p-8 rounded-xl text-center relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        
+                        {/* Replaced broken image with initials "AZ" for a clean look */}
+                        <div className="w-32 h-32 mx-auto bg-gradient-to-br from-cyan-400 to-violet-600 rounded-full flex items-center justify-center text-4xl font-bold text-white mb-6 border-4 border-slate-900 shadow-[0_0_20px_rgba(6,182,212,0.5)]">
+                            AZ
+                        </div>
+                        
+                        <h2 className="text-2xl font-bold text-white mb-1">Andrew Zhang</h2>
+                        <div className="text-cyan-400 font-mono text-xs tracking-widest uppercase mb-4">Montreal, Canada</div>
+                        
+                        <div className="flex justify-center mt-6">
+                            <a href="mailto:andrewzhang513@gmail.com" className="flex items-center gap-2 px-4 py-2 bg-slate-900 rounded-full text-slate-300 hover:text-white hover:bg-cyan-900/50 transition-all border border-slate-700 text-sm font-mono">
+                                <Mail className="w-4 h-4" />
+                                andrewzhang513@gmail.com
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="col-span-2 bg-slate-900/50 border border-slate-700 p-8 rounded-xl relative">
+                        <div className="absolute top-4 right-4 text-slate-600"><Scroll className="w-6 h-6" /></div>
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-violet-400" /> Professional Summary
+                        </h3>
+                        <p className="text-slate-300 leading-relaxed mb-6">
+                        Strategic problem-solver bridging the gap between creative vision and operational reality. I specialize in <strong>modernizing workflows, identifying bottlenecks, and integrating cutting-edge AI tools</strong> to reduce friction and accelerate innovation.
+                        </p>
+                        <p className="text-slate-400 text-sm leading-relaxed">
+                        With a background in managing complex budgets and diverse cross-functional teams, I bring structure to chaos while fostering a culture of creativity. A curiosity-driven professional dedicated to finding smarter, faster ways to turn ambitious ideas into tangible results.
+                        </p>
+                    </div>
+                    </div>
+
+                    <div className="mb-12">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2 font-mono uppercase tracking-wider">
+                        <Sword className="w-5 h-5 text-yellow-500" /> Core Competencies
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                        {[
+                        'Game Production',
+                        'AI Workflow Integration',
+                        'Strategic Project Mgmt',
+                        'Budgeting & P&L',
+                        'Business Development',
+                        'Marketing Strategy',
+                        'Vendor Management',
+                        'Cross-Functional Leadership',
+                        'Agile/Waterfall',
+                        'Risk Management'
+                        ].map((skillName, idx) => (
+                        <div key={idx} className="bg-slate-800 border border-slate-600 px-4 py-2 rounded flex items-center justify-center hover:border-cyan-400 transition-colors cursor-default shadow-sm">
+                            <span className="text-white font-bold text-sm">{skillName}</span>
+                        </div>
+                        ))}
+                    </div>
+                    </div>
+
+                    <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-8">
+                    <h3 className="text-lg font-bold text-white mb-8 flex items-center gap-2 font-mono uppercase tracking-wider">
+                        <Map className="w-5 h-5 text-green-500" /> Quest Log (Experience)
+                    </h3>
+                    <div className="space-y-10 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-700/50 ml-2">
+                        {[
+                        { 
+                            year: 'Jan 2025 – Present', 
+                            role: 'AI Game Project Manager / Producer @ Tencent', 
+                            details: [
+                                "Project: Unannounced AAA PvEvP Game.",
+                                "Lead research and integration of AI tools for character concepting, art asset generation, narrative, animation, SFX/music, and dialogue systems.",
+                                "Drive business development by scouting emerging AI technologies and vendors, evaluating feasibility, and securing strategic partnerships.",
+                                "Build production pipelines that reduce time and cost during conception; led teams to adopt AI-assisted workflows to expand creativity.",
+                                "Lead the creation of prototype assets, pre-visualization videos, and experimental features utilizing AI-enhanced methods.",
+                                "Support development across gameplay features, coordinating with game design, level design, engineering, and art teams.",
+                                "Define game vision with leadership, clarify deliverables, track milestones, and maintain quality expectations."
+                            ]
+                        },
+                        { 
+                            year: 'Jan 2022 – Present', 
+                            role: 'Senior Project Manager @ Tencent', 
+                            details: [
+                                "Focus: Studio Budgeting, Governance & Cross-Functional Alignment.",
+                                "Manage studio budget, annual P&L, forecasting, and financial reporting.",
+                                "Serve as the communication bridge between production teams and internal departments (IT, Finance, Legal, HR, Tax, Compliance).",
+                                "Facilitate alignment between global teams across multiple regions; support strategic planning for long-term development needs.",
+                                "Handle vendor relationships (Art, R&D, Co-dev), coordinate contract workflows, and manage hardware/software inventory.",
+                                "Oversee employee experience, onboarding/offboarding workflows, and organize cross-studio collaboration initiatives."
+                            ]
+                        },
+                        { 
+                            year: 'May 2017 – Dec 2021', 
+                            role: 'Co-Founder | Operations Manager @ OxygenTravel', 
+                            details: [
+                                "Founded a luxury agency and scaled the team to 20 employees.",
+                                "Defined KPIs and established Standard Operating Procedures (SOPs) for crisis management and customer service.",
+                                "Led bespoke product design for High-Net-Worth Individuals (HNWIs) and optimized global supply chains.",
+                                "Achieved consistent revenue growth through targeted marketing and operational excellence."
+                            ]
+                        },
+                        { 
+                            year: 'Aug 2014 – Apr 2017', 
+                            role: 'Lead Product Manager @ Beijing L\'Avion', 
+                            details: [
+                                "Led product design and successfully launched 'Morethanstay', a high-end hotel service mobile app.",
+                                "Served as Product Manager and UX Designer for L'Avion Life Healthcare products.",
+                                "Managed external development and presence for major industry events including ILTM Shanghai and PURE Marrakesh.",
+                                "Designed high-end private travel experiences for exclusive clientele."
+                            ]
+                        },
+                        { 
+                            year: 'Jan 2013 – Jun 2014', 
+                            role: 'Stage Producer (Internship) @ Shanghai Media Group', 
+                            details: [
+                                "Served as Stage Producer for China's Got Talent (2013) and 80's Talk Show.",
+                                "Managed content production workflows and live execution coordination."
+                            ]
+                        }
+                        ].map((item, idx) => (
+                        <div key={idx} className="relative pl-8 group">
+                            <div className="absolute left-0 top-2 w-4 h-4 bg-slate-900 border-2 border-cyan-500 rounded-full z-10 group-hover:bg-cyan-400 transition-colors" />
+                            <div className="flex flex-col sm:flex-row sm:items-baseline gap-3 mb-2">
+                                <h4 className="text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">{item.role}</h4>
+                                <span className="text-xs font-mono text-cyan-500 bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-900/50 w-fit whitespace-nowrap">
+                                    {item.year}
+                                </span>
+                            </div>
+                            <ul className="list-disc pl-4 space-y-1.5 text-slate-400 text-sm">
+                                {item.details.map((detail, i) => (
+                                    <li key={i} className="leading-relaxed">{detail}</li>
+                                ))}
+                            </ul>
+                        </div>
+                        ))}
+                    </div>
+                    
+                    <div className="mt-12 pt-8 border-t border-slate-700">
+                         <h4 className="text-md font-bold text-white mb-4 flex items-center gap-2 font-mono uppercase tracking-wider">
+                            <Brain className="w-4 h-4 text-violet-500" /> Education & Certifications
+                        </h4>
+                        <div className="grid md:grid-cols-2 gap-6 text-sm">
+                            <div className="bg-slate-900/50 p-4 rounded border border-slate-700">
+                                <span className="text-cyan-400 font-bold block mb-1">Bachelor of Arts, Communications</span>
+                                <span className="text-slate-300">Fudan University</span>
+                            </div>
+                            <div className="bg-slate-900/50 p-4 rounded border border-slate-700">
+                                <span className="text-cyan-400 font-bold block mb-1">Project Management Professional (PMP)</span>
+                                <span className="text-slate-300">Project Management Institute (PMI)</span>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex gap-4 text-xs text-slate-500 font-mono">
+                            <span>LANGUAGES: English, French, Mandarin</span>
+                        </div>
+                    </div>
+
+                    </div>
+                </div>
+                </PageTransition>
+            );
+        };
+
+        // 3. Lab Page (RENAMED TO TEST SERVER)
+        const LabPage = () => {
+            return (
+                <PageTransition title="Test Server" subtitle="Experimental Protocols (PTR) & PoC Archive">
+                <div className="max-w-6xl mx-auto px-4 pb-20">
+                    <div className="grid gap-8">
+                    {LAB_EXPERIMENTS.map((exp, idx) => (
+                        <motion.div 
+                        key={exp.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-colors group"
+                        >
+                        <div className="flex items-center justify-between p-6 bg-slate-900/50 border-b border-slate-700">
+                            <div className="flex items-center gap-4">
+                            <div className="p-3 bg-slate-800 rounded border border-slate-600 text-cyan-400">
+                                <Server className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">{exp.title}</h3>
+                                <div className="text-xs font-mono text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                <span className="text-cyan-600">ID: {exp.code}</span>
+                                <span>//</span>
+                                <span>{exp.category}</span>
+                                </div>
+                            </div>
+                            </div>
+                            <div className={`px-3 py-1 rounded text-xs font-mono font-bold border ${exp.statusColor}`}>
+                            {exp.status}
+                            </div>
+                        </div>
+                        
+                        <div className="p-6 grid md:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                            <div>
+                                <div className="text-xs text-slate-500 uppercase font-bold mb-1 flex items-center gap-2">
+                                <TestTube className="w-3 h-3" /> Problem
+                                </div>
+                                <p className="text-slate-300 text-sm leading-relaxed">{exp.problem}</p>
+                            </div>
+                            <div>
+                                <div className="text-xs text-slate-500 uppercase font-bold mb-1 flex items-center gap-2">
+                                <Microscope className="w-3 h-3" /> Methodology
+                                </div>
+                                <p className="text-slate-300 text-sm leading-relaxed">{exp.method}</p>
+                            </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                            <div className="bg-green-900/10 border-l-2 border-green-500 pl-4 py-1">
+                                <div className="text-xs text-green-400 uppercase font-bold mb-1">Conclusion</div>
+                                <p className="text-slate-200 text-sm leading-relaxed">{exp.conclusion}</p>
+                            </div>
+                            <div className="bg-violet-900/10 border-l-2 border-violet-500 pl-4 py-1">
+                                <div className="text-xs text-violet-400 uppercase font-bold mb-1">Pipeline Impact</div>
+                                <p className="text-slate-200 text-sm leading-relaxed">{exp.impact}</p>
+                            </div>
+                            </div>
+                        </div>
+                        </motion.div>
+                    ))}
+                    </div>
+                </div>
+                </PageTransition>
+            );
+        };
+
+        // 4. Articles Page
+        const ArticlesPage = () => {
+            return (
+                <PageTransition title="Mission Logs" subtitle="Thoughts, Essays and Deep Dives">
+                <div className="max-w-5xl mx-auto px-4 pb-20">
+                    <div className="grid gap-6">
+                    {ARTICLES_LIST.map((article, idx) => (
+                        <motion.div 
+                        key={article.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        onClick={() => setSelectedArticle(article)}
+                        className="bg-slate-800/60 border border-slate-700 p-6 rounded-lg hover:bg-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer group"
+                        >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-3">
+                            <div className="flex items-center gap-3 mb-2 md:mb-0">
+                            <span className="px-2 py-0.5 bg-cyan-950 border border-cyan-900 text-cyan-400 text-[10px] font-mono font-bold uppercase rounded">
+                                {article.category}
+                            </span>
+                            <span className="text-slate-500 text-xs font-mono flex items-center gap-1">
+                                <Calendar className="w-3 h-3" /> {article.date}
+                            </span>
+                            </div>
+                            <div className="flex gap-2">
+                            {article.tags.map(tag => (
+                                <span key={tag} className="text-slate-600 text-xs font-mono">#{tag}</span>
+                            ))}
+                            </div>
+                        </div>
+                        
+                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors flex items-center">
+                            <Terminal className="w-5 h-5 mr-2 opacity-50 group-hover:opacity-100" />
+                            {article.title}
+                            {article.content && (
+                                <span className="ml-2 text-xs bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded-full">FULL</span>
+                            )}
+                        </h3>
+                        
+                        <p className="text-slate-400 text-sm leading-relaxed pl-7">
+                            {article.summary}
+                        </p>
+                        
+                        <div className="mt-4 pl-7 flex items-center text-xs font-bold text-cyan-600 group-hover:text-cyan-400 uppercase tracking-widest transition-colors opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 duration-300">
+                            Read Log <ArrowRight className="w-3 h-3 ml-1" />
+                        </div>
+                        </motion.div>
+                    ))}
+                    </div>
+                </div>
+                </PageTransition>
+            );
+        };
+
+        const ArticleReader = ({ article, goBack }) => {
+             return (
+                <PageTransition>
+                     <div className="max-w-4xl mx-auto px-4 pb-20 pt-8">
+                        <button onClick={goBack} className="mb-6 text-slate-400 hover:text-white flex items-center uppercase text-xs font-bold tracking-widest">
+                            <ChevronLeft className="w-4 h-4 mr-1"/> Back to Logs
+                        </button>
+                        
+                        <article className="bg-slate-900/80 border border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl">
+                            <header className="mb-8 border-b border-slate-700 pb-8">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <span className="px-3 py-1 bg-cyan-950 border border-cyan-900 text-cyan-400 text-xs font-mono font-bold uppercase rounded">
+                                        {article.category}
+                                    </span>
+                                    <span className="text-slate-500 text-sm font-mono flex items-center gap-1">
+                                        <Calendar className="w-4 h-4" /> {article.date}
+                                    </span>
+                                </div>
+                                <h1 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight">{article.title}</h1>
+                                <div className="flex gap-2">
+                                    {article.tags.map(tag => (
+                                        <span key={tag} className="text-slate-400 text-xs font-mono bg-slate-800 px-2 py-1 rounded">#{tag}</span>
+                                    ))}
+                                </div>
+                            </header>
+                            
+                            <div className="prose prose-invert max-w-none">
+                                {article.content ? (
+                                    article.content.split('\n').map((line, i) => {
+                                        if (line.startsWith('# ')) return <h1 key={i} className="text-3xl font-bold text-white mt-8 mb-4">{line.replace('# ', '')}</h1>;
+                                        if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-bold text-cyan-100 mt-8 mb-4 border-l-4 border-cyan-500 pl-4">{line.replace('## ', '')}</h2>;
+                                        if (line.startsWith('### ')) return <h3 key={i} className="text-xl font-bold text-slate-200 mt-6 mb-3">{line.replace('### ', '')}</h3>;
+                                        if (line.startsWith('- ')) return <li key={i} className="ml-4 list-disc text-slate-300 mb-2">{line.replace('- ', '')}</li>;
+                                        if (line.trim() === '') return <br key={i} />;
+                                        return <p key={i} className="text-slate-300 mb-4 leading-relaxed">{line}</p>;
+                                    })
+                                ) : (
+                                    <div className="text-center text-slate-500 py-20 italic">Content encrypted. Access level insufficient.</div>
+                                )}
+                            </div>
+                        </article>
+                     </div>
+                </PageTransition>
+             );
+        };
+
+        /* --- PORTFOLIO PAGE COMPONENT --- */
+        const PortfolioPage = () => {
+             // Define placeholder data for the projects (since we cannot load images/videos)
+             const projects = [
+                { id: 'vid', title: 'AI Pitch Video Production', type: 'Video', mediaType: 'Video', desc: 'Creating characters, scenes, animations, and edits automatically to help teams visualize, pitch, and validate concepts fast.', status: 'Complete', videoId: 'dQw4w9WgXcQ' },
+                { id: 'char', title: 'AI Character Pipeline', type: 'Character', mediaType: 'Image/3D Model', desc: 'Demonstrating style consistency and multi-angle variant generation for high-fidelity protagonists.', status: 'WIP' },
+                { id: 'env', title: 'AI Environment Concepting', type: 'Environment', mediaType: 'Video/3D Blockout', desc: 'Accelerated level blockout using Skybox AI and procedural scattering to test spatial layout and lighting.', status: 'WIP' },
+            ];
+
+            const categories = ['All', 'Character', 'Environment', 'Video', 'Animation', 'Design', 'Other'];
+            const [activeCategory, setActiveCategory] = useState('All');
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [videoUrl, setVideoUrl] = useState('');
+            const [modalTitle, setModalTitle] = useState('');
+            const [password, setPassword] = useState(''); // Add state for password
+            const [showPasswordModal, setShowPasswordModal] = useState(false); // State to control password modal visibility
+            const [pendingProject, setPendingProject] = useState(null); // Store project user is trying to access
+
+            const filteredProjects = activeCategory === 'All'
+                ? projects
+                : projects.filter(p => p.type === activeCategory);
+
+            const getIcon = (type) => {
+                switch (type) {
+                    case 'Character': return <Users className="w-5 h-5 text-cyan-400" />;
+                    case 'Environment': return <Map className="w-5 h-5 text-green-400" />;
+                    case 'Video': return <Video className="w-5 h-5 text-red-400" />;
+                    case 'Animation': return <Activity className="w-5 h-5 text-yellow-400" />;
+                    case 'Design': return <Gamepad2 className="w-5 h-5 text-violet-400" />;
+                    default: return <Box className="w-5 h-5 text-slate-400" />;
+                }
+            };
+
+            const handlePasswordSubmit = () => {
+                if (password === '12345') {
+                    if (pendingProject) {
+                        setVideoUrl(`https://www.youtube.com/embed/${pendingProject.videoId || 'dQw4w9WgXcQ'}`);
+                        setModalTitle(pendingProject.title);
+                        setIsModalOpen(true);
+                    }
+                    setShowPasswordModal(false);
+                    setPassword('');
+                    setPendingProject(null);
+                } else {
+                    alert("Incorrect password. Access denied.");
+                    setPassword('');
+                }
+            };
+
+            const initiateVideoView = (project) => {
+                setPendingProject(project);
+                setShowPasswordModal(true);
+            };
+            
+            const closeModal = () => {
+                setIsModalOpen(false);
+                setVideoUrl('');
+                setModalTitle('');
+            };
+
+            const closePasswordModal = () => {
+                setShowPasswordModal(false);
+                setPassword('');
+                setPendingProject(null);
+            }
+
+
+            return (
+                <PageTransition title="Portfolio & Project Samples" subtitle="Key AI-Powered Projects and Deliverables">
+                    <div className="max-w-7xl mx-auto px-4 pb-20">
+                        
+                        {/* Category Tabs */}
+                        <div className="flex flex-wrap gap-2 mb-8 border-b border-slate-700 pb-4">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`px-4 py-2 text-sm font-mono rounded-full transition-colors ${
+                                        activeCategory === cat
+                                            ? 'bg-cyan-600 text-white shadow-lg'
+                                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {cat} ({cat === 'All' ? projects.length : projects.filter(p => p.type === cat).length})
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Project Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {filteredProjects.map((project, index) => (
+                                <motion.div
+                                    key={project.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className="bg-slate-900/70 border border-slate-700 rounded-xl overflow-hidden shadow-xl hover:shadow-cyan-500/20 transition-shadow duration-300"
+                                >
+                                    {/* Media Placeholder - TITLE MOVED HERE */}
+                                    <div className="h-48 bg-slate-800/80 flex items-center justify-center relative p-4"> {/* Increased height slightly */}
+                                        <div className={`absolute inset-0 bg-gradient-to-br opacity-20 ${
+                                            project.type === 'Character' ? 'from-cyan-500 to-violet-500' :
+                                            project.type === 'Environment' ? 'from-green-500 to-cyan-500' :
+                                            project.type === 'Video' ? 'from-red-500 to-orange-500' :
+                                            'from-slate-600 to-slate-800'
+                                        }`}></div>
+                                        <div className="relative z-10 text-center flex flex-col items-center justify-center h-full">
+                                            {getIcon(project.type)}
+                                            
+                                            {/* Title is now displayed here */}
+                                            <h4 className="text-lg font-bold text-white mt-3 mb-2 leading-tight">{project.title}</h4>
+                                            
+                                            <div className="flex gap-2">
+                                                <span className="text-[10px] text-slate-400 font-mono uppercase bg-black/30 px-2 py-1 rounded border border-white/10">{project.mediaType}</span>
+                                                <span className={`inline-block px-2 py-1 text-[10px] font-bold rounded font-mono uppercase border ${
+                                                    project.status === 'Complete' ? 'bg-green-900/40 text-green-400 border-green-500/30' : 'bg-yellow-900/40 text-yellow-400 border-yellow-500/30'
+                                                }`}>
+                                                    {project.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Content - Removed duplicate Title/Icon */}
+                                    <div className="p-6 pt-4">
+                                        {project.desc && <p className="text-sm text-slate-400 mb-4">{project.desc}</p>}
+                                        
+                                        {project.type === 'Video' ? (
+                                            <button 
+                                                onClick={() => initiateVideoView(project)}
+                                                className="w-full justify-center py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/50 hover:border-indigo-400 text-indigo-300 hover:text-white text-sm font-bold flex items-center transition-all rounded-lg">
+                                                <Play className="w-4 h-4 mr-2"/> View Protected Video
+                                            </button>
+                                        ) : (
+                                            <button className="text-cyan-500 hover:text-cyan-300 text-sm font-bold flex items-center transition-colors">
+                                                View Details <ChevronRight className="w-4 h-4 ml-1" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            ))}
+
+                            {filteredProjects.length === 0 && (
+                                <div className="md:col-span-3 text-center py-16 text-slate-500 italic border border-slate-800 rounded-xl">
+                                    No projects found for this category.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Password Modal */}
+                        <AnimatePresence>
+                            {showPasswordModal && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+                                    onClick={closePasswordModal}
+                                >
+                                    <motion.div
+                                        initial={{ scale: 0.9, y: 20 }}
+                                        animate={{ scale: 1, y: 0 }}
+                                        exit={{ scale: 0.9, y: 20 }}
+                                        className="bg-slate-900 border border-indigo-500/50 rounded-xl p-8 w-full max-w-md shadow-2xl shadow-indigo-500/20"
+                                        onClick={e => e.stopPropagation()}
+                                    >
+                                        <div className="text-center mb-6">
+                                            <Lock className="w-12 h-12 text-indigo-500 mx-auto mb-4" />
+                                            <h3 className="text-xl font-bold text-white">Protected Content</h3>
+                                            <p className="text-slate-400 text-sm mt-2">Please enter the access code to view this video.</p>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            <input 
+                                                type="password" 
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                                                placeholder="Enter Access Code"
+                                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 text-center tracking-widest placeholder:tracking-normal transition-colors"
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-3">
+                                                <button 
+                                                    onClick={closePasswordModal}
+                                                    className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button 
+                                                    onClick={handlePasswordSubmit}
+                                                    className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold transition-colors shadow-lg shadow-indigo-500/30"
+                                                >
+                                                    Unlock
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Video Modal */}
+                        <AnimatePresence>
+                            {isModalOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+                                    onClick={closeModal}
+                                >
+                                    <motion.div
+                                        initial={{ scale: 0.9, y: 50 }}
+                                        animate={{ scale: 1, y: 0 }}
+                                        exit={{ scale: 0.9, y: 50 }}
+                                        className="bg-slate-900 border border-cyan-700 rounded-xl p-6 w-full max-w-4xl"
+                                        onClick={e => e.stopPropagation()}
+                                    >
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xl font-bold text-white">{modalTitle}</h3>
+                                            <button onClick={closeModal} className="text-slate-400 hover:text-red-400">
+                                                <X className="w-6 h-6" />
+                                            </button>
+                                        </div>
+                                        <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
+                                            <iframe
+                                                src={videoUrl}
+                                                frameBorder="0"
+                                                allow="autoplay; encrypted-media"
+                                                allowFullScreen
+                                                className="absolute top-0 left-0 w-full h-full rounded"
+                                            ></iframe>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </PageTransition>
+            );
+        };
+
+        /* --- MAIN APP CONTROLLER --- */
+
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('home');
+            const [currentPipeline, setCurrentPipeline] = useState(null);
+            const [selectedArticle, setSelectedArticle] = useState(null);
+
+            useEffect(() => {
+                window.scrollTo(0, 0);
+            }, [currentPage, selectedArticle]);
+
+            const particleMode = useMemo(() => {
+                if (currentPage === 'home') return 'home';
+                if (currentPage === 'pipeline-detail' && currentPipeline) {
+                if (['art', '3d_asset'].includes(currentPipeline)) return 'art';
+                if (['animation', 'pv'].includes(currentPipeline)) return 'animation';
+                if (['qa', 'localization', 'tools'].includes(currentPipeline)) return 'qa';
+                if (['design', 'research'].includes(currentPipeline)) return 'design';
+                }
+                return 'default';
+            }, [currentPage, currentPipeline]);
+
+            return (
+                <div className="min-h-screen text-slate-100 selection:bg-cyan-500/30">
+                    <ThreeBackground mode={particleMode} />
+                    <NavBar setPage={(page) => { setCurrentPage(page); setSelectedArticle(null); }} currentPage={currentPage} />
+                    <AnimatePresence mode="wait">
+                        {currentPage === 'home' && (
+                        <motion.div key="home" exit={{ opacity: 0 }}>
+                            <Home setPage={setCurrentPage} />
+                        </motion.div>
+                        )}
+                        {currentPage === 'about' && (
+                        <motion.div key="about" exit={{ opacity: 0 }}>
+                            <PlayerProfile />
+                        </motion.div>
+                        )}
+                        {currentPage === 'pipelines' && (
+                        <motion.div key="pipelines" exit={{ opacity: 0 }}>
+                            <GalaxyMissionSelect key="pipelines" setPage={setCurrentPage} setPipeline={setCurrentPipeline} />
+                        </motion.div>
+                        )}
+                        {currentPage === 'pipeline-detail' && (
+                        <motion.div key="pipeline-detail" exit={{ opacity: 0 }}>
+                            <PipelineDetail 
+                                pipelineId={currentPipeline} 
+                                goBack={() => setCurrentPage('pipelines')} 
+                                onViewArticle={(id) => {
+                                    const article = ARTICLES_LIST.find(a => a.id === id);
+                                    if (article) {
+                                        setSelectedArticle(article);
+                                        setCurrentPage('articles');
+                                    }
+                                }}
+                            />
+                        </motion.div>
+                        )}
+                        {currentPage === 'portfolio' && (
+                            <motion.div key="portfolio" exit={{ opacity: 0 }}>
+                                <PortfolioPage />
+                            </motion.div>
+                        )}
+                        {currentPage === 'articles' && !selectedArticle && (
+                            <div className="max-w-5xl mx-auto px-4 pb-20">
+                                <PageTransition title="Mission Logs" subtitle="Thoughts, Essays and Deep Dives">
+                                    <div className="grid gap-6">
+                                        {ARTICLES_LIST.map((article, idx) => (
+                                            <motion.div 
+                                            key={article.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.1 }}
+                                            onClick={() => setSelectedArticle(article)}
+                                            className="bg-slate-800/60 border border-slate-700 p-6 rounded-lg hover:bg-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer group"
+                                            >
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between mb-3">
+                                                <div className="flex items-center gap-3 mb-2 md:mb-0">
+                                                <span className="px-2 py-0.5 bg-cyan-950 border border-cyan-900 text-cyan-400 text-[10px] font-mono font-bold uppercase rounded">
+                                                    {article.category}
+                                                </span>
+                                                <span className="text-slate-500 text-xs font-mono flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" /> {article.date}
+                                                </span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                {article.tags.map(tag => (
+                                                    <span key={tag} className="text-slate-600 text-xs font-mono">#{tag}</span>
+                                                ))}
+                                                </div>
+                                            </div>
+                                            
+                                            <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors flex items-center">
+                                                <Terminal className="w-5 h-5 mr-2 opacity-50 group-hover:opacity-100" />
+                                                {article.title}
+                                                {article.content && (
+                                                    <span className="ml-2 text-xs bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded-full">FULL</span>
+                                                )}
+                                            </h3>
+                                            
+                                            <p className="text-slate-400 text-sm leading-relaxed pl-7">
+                                                {article.summary}
+                                            </p>
+                                            
+                                            <div className="mt-4 pl-7 flex items-center text-xs font-bold text-cyan-600 group-hover:text-cyan-400 uppercase tracking-widest transition-colors opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 duration-300">
+                                                Read Log <ArrowRight className="w-3 h-3 ml-1" />
+                                            </div>
+                                            </motion.div>
+                                        ))}
+                                        </div>
+                                </PageTransition>
+                            </div>
+                        )}
+                        {currentPage === 'articles' && selectedArticle && (
+                            <ArticleReader article={selectedArticle} goBack={() => setSelectedArticle(null)} />
+                        )}
+                        {currentPage === 'toolbox' && <SimplePage title="Arsenal / Toolbox" icon={Wrench} desc="Approved AI Tools & Software Stack." />}
+                    </AnimatePresence>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
