@@ -4,41 +4,148 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Petit Hibou</title>
-<meta name="description" content="Jeu d'apprentissage 2e année (Québec) : français, mathématique, anglais, arts plastiques.">
+<meta name="description" content="Jeu d'apprentissage pour la 2e année au Québec : français, mathématique, anglais, chinois, sciences, livres et arts plastiques.">
 <style>
-  :root { --ink: #2b2d42; --bg: #fff8ec; --card: #fff; --acc: #8b5cf6; }
+  :root { --ink: #2b2d42; --ink2: #5c6078; --bg: #fff8ec; --card: #fff; --line: #ece3d3; --green: #2fb36f; --purple: #8b5cf6; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: linear-gradient(#efe7ff, var(--bg) 420px); color: var(--ink); font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 48px; display: flex; flex-direction: column; gap: 22px; }
-  .back { color: var(--ink); opacity: .7; text-decoration: none; font-weight: 700; }
-  h1 { font-size: clamp(40px, 8vw, 72px); margin: 0; line-height: 1; }
-  .sub { font-size: clamp(18px, 2.6vw, 24px); margin: 0; opacity: .85; }
-  .play { align-self: flex-start; background: #2fb36f; color: #fff; text-decoration: none; font-weight: 900; font-size: 26px; padding: 16px 34px; border-radius: 22px; box-shadow: 0 6px 0 #1f8a52; }
-  .play:active { transform: translateY(4px); box-shadow: 0 2px 0 #1f8a52; }
-  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
-  .shots img { width: 100%; border-radius: 18px; box-shadow: 0 8px 24px #2b2d4222; display: block; }
-  ul { margin: 0; padding-left: 22px; font-size: 18px; line-height: 1.6; }
-  .note { font-size: 15px; opacity: .7; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  header { display: flex; align-items: center; gap: 16px; padding: 20px 0; }
+  .back { text-decoration: none; color: var(--ink2); font-weight: 700; flex: 1; }
+  .langs { display: flex; background: var(--card); border-radius: 999px; padding: 4px; box-shadow: 0 3px 0 var(--line); }
+  .langs button { border: 0; background: none; font: inherit; font-weight: 800; padding: 8px 16px; border-radius: 999px; cursor: pointer; color: var(--ink2); }
+  .langs button.on { background: var(--ink); color: #fff; }
+  .hero { display: grid; grid-template-columns: 1fr 1.15fr; gap: 40px; align-items: center; padding: 24px 0 56px; }
+  .logo { font-size: 64px; line-height: 1; }
+  h1 { font-size: clamp(44px, 7vw, 76px); margin: 8px 0 12px; line-height: 1; letter-spacing: -1px; }
+  .tag { font-size: clamp(19px, 2.2vw, 24px); color: var(--ink2); margin: 0 0 28px; line-height: 1.4; }
+  .play { display: inline-flex; align-items: center; gap: 12px; background: var(--green); color: #fff; text-decoration: none; font-weight: 900; font-size: 26px; padding: 18px 36px; border-radius: 24px; box-shadow: 0 7px 0 #1f8a52; }
+  .play:active { transform: translateY(5px); box-shadow: 0 2px 0 #1f8a52; }
+  .install { margin-top: 18px; color: var(--ink2); font-size: 15px; max-width: 420px; line-height: 1.5; }
+  .ipad { background: #23252f; border-radius: 34px; padding: 18px; box-shadow: 0 30px 60px #2b2d4230; transform: rotate(-1.5deg); }
+  .ipad img { display: block; width: 100%; border-radius: 18px; }
+  h2 { font-size: clamp(28px, 3.4vw, 38px); margin: 0 0 22px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 22px; padding-bottom: 56px; }
+  .card { background: var(--card); border-radius: 26px; overflow: hidden; box-shadow: 0 6px 0 var(--line); display: flex; flex-direction: column; }
+  .card img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-bottom: 1px solid var(--line); }
+  .card div { padding: 16px 20px 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 22px; }
+  .card p { margin: 0; color: var(--ink2); line-height: 1.5; }
+  .facts { display: flex; flex-wrap: wrap; gap: 12px; padding-bottom: 40px; }
+  .fact { background: var(--card); border-radius: 18px; padding: 14px 20px; box-shadow: 0 4px 0 var(--line); font-weight: 800; }
+  .fact b { font-size: 26px; display: block; color: var(--purple); }
+  .story { display: flex; flex-direction: column; gap: 56px; padding: 8px 0 56px; }
+  .row { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
+  .row.rev img { order: 2; }
+  .row img { display: block; width: 100%; border-radius: 22px; box-shadow: 0 16px 40px #2b2d4220; }
+  .row h2 { margin: 0 0 12px; font-size: clamp(26px, 3vw, 34px); }
+  .row p, .parents p { margin: 0; font-size: 19px; line-height: 1.65; color: var(--ink2); }
+  .parents { background: var(--card); border-radius: 28px; padding: 30px 34px; box-shadow: 0 6px 0 var(--line); margin-bottom: 48px; }
+  @media (max-width: 860px) { .row { grid-template-columns: 1fr; } .row.rev img { order: 0; } }
+  footer { color: var(--ink2); padding: 24px 0 40px; border-top: 1px solid var(--line); font-size: 15px; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } .ipad { transform: none; } }
 </style>
 </head>
 <body>
-<main>
-  <a class="back" href="/">← zhangandrew.com</a>
-  <h1>🦉 Petit Hibou</h1>
-  <p class="sub">Jeu d’apprentissage pour la 2e année au Québec · 给魁北克二年级孩子的学习游戏</p>
-  <a class="play" href="https://playtimexd.github.io/JAJA/">▶ Jouer · 开始玩</a>
-  <div class="shots">
-    <img src="1.webp" alt="Accueil" loading="lazy">
-    <img src="2.webp" alt="Carte du cahier A" loading="lazy">
-    <img src="3.webp" alt="Arts plastiques" loading="lazy">
-  </div>
-  <ul>
-    <li>Français, mathématique (cahiers Numérik A/B/C), anglais, arts plastiques · 法语、数学、英语、手工美术</li>
-    <li>Facile / Moyen / Difficile · 简单 / 中等 / 难</li>
-    <li>Défi éclair, ballons, mémoire, gardiens, missions, badges · 闪电挑战、打气球、翻牌、守护者、任务和徽章</li>
-    <li>Plus de 170 projets de dessin et de bricolage étape par étape · 170 多个分步画画和手工项目</li>
-  </ul>
-  <p class="note">Sur iPad : Safari → Partager → « Sur l’écran d’accueil » pour l’installer. · iPad 上用 Safari 打开，点「分享」→「添加到主屏幕」即可安装。</p>
-</main>
+<div class="wrap">
+  <header>
+    <a class="back" href="/">← zhangandrew.com</a>
+    <div class="langs" role="group" aria-label="Langue">
+      <button data-l="fr">Français</button><button data-l="zh">中文</button><button data-l="en">English</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="logo">🦉</div>
+      <h1>Petit Hibou</h1>
+      <p class="tag" data-t="tag"></p>
+      <a class="play" href="https://playtimexd.github.io/JAJA/">▶ <span data-t="play"></span></a>
+      <p class="install" data-t="install"></p>
+    </div>
+    <div class="ipad"><img src="home.webp" alt="" width="1200" height="900"></div>
+  </section>
+
+  <section class="story">
+    <div class="row"><img src="eclair.webp" alt="" loading="lazy"><div><h2 data-t="s1t"></h2><p data-t="s1"></p></div></div>
+    <div class="row rev"><img src="book.webp" alt="" loading="lazy"><div><h2 data-t="s2t"></h2><p data-t="s2"></p></div></div>
+    <div class="row"><img src="why.webp" alt="" loading="lazy"><div><h2 data-t="s3t"></h2><p data-t="s3"></p></div></div>
+    <div class="row rev"><img src="talk.webp" alt="" loading="lazy"><div><h2 data-t="s4t"></h2><p data-t="s4"></p></div></div>
+    <div class="row"><img src="arts.webp" alt="" loading="lazy"><div><h2 data-t="s5t"></h2><p data-t="s5"></p></div></div>
+  </section>
+  <section class="parents"><h2 data-t="pt"></h2><p data-t="p"></p></section>
+  <footer data-t="foot"></footer>
+</div>
+
+<script>
+const T = {
+  fr: {
+    tag: 'J’ai fait ce jeu pour mon enfant, qui est en 2e année dans une école francophone de Montréal. Il suit ce qu’on voit en classe, en français, en maths et en anglais, et on y a ajouté le chinois qu’on parle à la maison.',
+    play: 'Ouvrir le jeu',
+    install: 'Il marche sur iPad, dans Safari. Pour l’avoir comme une vraie app : Partager, puis « Sur l’écran d’accueil ». Pas de compte, pas de publicité.',
+    s1t: 'Dix minutes, une petite victoire',
+    s1: 'Une partie, c’est huit questions lues à voix haute, au niveau que l’enfant choisit : facile, moyen ou difficile. Les maths suivent les cahiers Numérik qu’il utilise en classe. Quand il veut plus de défi, il y a le défi éclair de 60 secondes : il essaie de battre son propre record, pas celui des autres.',
+    s2t: 'Des livres qu’il peut lire seul',
+    s2: 'Dix histoires illustrées, des Trois petits cochons à un dragon perdu dans une ruelle de Montréal. Quand un mot bloque, il le touche et l’entend. À la fin, quelques questions pour vérifier qu’il a compris.',
+    s3t: 'Pour toutes ses questions « pourquoi »',
+    s3: 'Pourquoi les feuilles d’érable rougissent? Pourquoi on voit son souffle l’hiver? 120 réponses courtes avec des images, en chinois avec le pinyin, ou en français.',
+    s4t: 'Parler pour vrai',
+    s4: 'Le hibou discute avec lui à voix haute, en anglais, en français ou en chinois : commander une crème glacée, deviner un animal, inventer une histoire. Les parents choisissent combien de minutes par jour.',
+    s5t: 'Et quand l’écran s’éteint',
+    s5: 'Plus de 200 dessins et bricolages expliqués étape par étape, avec ce qu’on a déjà à la maison : rouleaux de papier, boîtes de céréales, feuilles d’automne.',
+    pt: 'Pour les parents',
+    p: 'La page Parents montre le temps passé chaque jour et la réussite par chapitre. Tout reste sur l’iPad : rien n’est envoyé ailleurs, sauf la voix pendant une conversation avec le hibou.',
+    foot: 'Fait à Montréal pour un enfant de 2e année. Programme du Québec (PFEQ).',
+  },
+  zh: {
+    tag: '这是我给自己孩子做的学习游戏。孩子在蒙特利尔的法语学校读二年级，游戏跟着学校的进度走：法语、数学、英语；另外加上了我们在家说的中文。',
+    play: '打开游戏',
+    install: '在 iPad 的 Safari 里就能玩。想像普通 App 一样用：点「分享」，再点「添加到主屏幕」。不用注册，没有广告。',
+    s1t: '十分钟，一点小成就',
+    s1: '一局是八道题，每道都会读出来，难度由孩子自己选：简单、中等或难。数学跟着课堂上用的 Numérik 练习册。想要挑战时，可以玩 60 秒闪电赛，目标是打破自己的纪录，而不是和别人比。',
+    s2t: '能自己读下去的书',
+    s2: '十本带插图的法语故事，从《三只小猪》到一条迷路在蒙特利尔后巷的小龙。遇到不认识的词，点一下就能听到。读完有几道题，看看是不是真的读懂了。',
+    s3t: '回答孩子的「为什么」',
+    s3: '枫叶为什么秋天会变红？冬天为什么能看见自己呼出的气？120 个简短的回答，配着图，用带拼音的中文讲，也可以切换成法语。',
+    s4t: '真的开口说',
+    s4: '猫头鹰会用英语、法语或中文和孩子聊天：点冰淇淋、猜动物、一起编故事。每天能聊多久由家长决定。',
+    s5t: '放下屏幕以后',
+    s5: '两百多个画画和手工，一步一步教，材料都是家里现成的：卫生纸筒、麦片盒、秋天的落叶。',
+    pt: '给家长',
+    p: '家长页能看到每天用了多久、每个单元答对了多少。所有记录都只存在这台 iPad 上，只有和猫头鹰对话时的声音会经过服务器。',
+    foot: '在蒙特利尔为一个二年级孩子做的。依照魁北克课程（PFEQ）。',
+  },
+  en: {
+    tag: 'I made this game for my child, who is in grade 2 at a French school in Montréal. It follows what they cover in class in French, math and English, and adds the Chinese we speak at home.',
+    play: 'Open the game',
+    install: 'It runs on iPad in Safari. To keep it like a real app: Share, then “Add to Home Screen”. No account, no ads.',
+    s1t: 'Ten minutes, one small win',
+    s1: 'A round is eight questions read aloud, at the level the child picks: easy, medium or hard. Math follows the Numérik workbooks used in class. For a challenge there is a 60-second lightning round, where the goal is to beat your own record, not someone else’s.',
+    s2t: 'Books they can read on their own',
+    s2: 'Ten illustrated stories, from The Three Little Pigs to a lost dragon in a Montréal back alley. When a word is hard, tap it to hear it. A few questions at the end check that the story made sense.',
+    s3t: 'For all the “why” questions',
+    s3: 'Why do maple leaves turn red? Why can you see your breath in winter? 120 short answers with pictures, in Chinese with pinyin or in French.',
+    s4t: 'Actually speaking',
+    s4: 'The owl talks with them out loud in English, French or Chinese: ordering ice cream, guessing an animal, making up a story. Parents decide how many minutes a day.',
+    s5t: 'When the screen goes off',
+    s5: 'Over 200 drawings and crafts, step by step, using what is already at home: toilet paper rolls, cereal boxes, autumn leaves.',
+    pt: 'For parents',
+    p: 'The Parents page shows time spent each day and results per chapter. Everything stays on the iPad; only the voice is sent out, during a conversation with the owl.',
+    foot: 'Made in Montréal for one grade 2 kid. Québec program (PFEQ).',
+  },
+};
+const HTML_LANG = { fr: 'fr-CA', zh: 'zh-Hans', en: 'en-CA' };
+function setLang(l) {
+  if (!T[l]) l = 'fr';
+  document.documentElement.lang = HTML_LANG[l];
+  document.querySelectorAll('[data-t]').forEach((n) => { n.textContent = T[l][n.dataset.t]; });
+  document.querySelectorAll('.langs button').forEach((b) => b.classList.toggle('on', b.dataset.l === l));
+  try { localStorage.setItem('ph-lang', l); } catch {}
+}
+document.querySelectorAll('.langs button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.l)));
+let saved = null; try { saved = localStorage.getItem('ph-lang'); } catch {}
+setLang(saved || 'fr');
+</script>
 </body>
 </html>
