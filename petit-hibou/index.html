@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petit Hibou</title>
+<meta name="description" content="Jeu d'apprentissage 2e année (Québec) : français, mathématique, anglais, arts plastiques.">
+<style>
+  :root { --ink: #2b2d42; --bg: #fff8ec; --card: #fff; --acc: #8b5cf6; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: linear-gradient(#efe7ff, var(--bg) 420px); color: var(--ink); font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 48px; display: flex; flex-direction: column; gap: 22px; }
+  .back { color: var(--ink); opacity: .7; text-decoration: none; font-weight: 700; }
+  h1 { font-size: clamp(40px, 8vw, 72px); margin: 0; line-height: 1; }
+  .sub { font-size: clamp(18px, 2.6vw, 24px); margin: 0; opacity: .85; }
+  .play { align-self: flex-start; background: #2fb36f; color: #fff; text-decoration: none; font-weight: 900; font-size: 26px; padding: 16px 34px; border-radius: 22px; box-shadow: 0 6px 0 #1f8a52; }
+  .play:active { transform: translateY(4px); box-shadow: 0 2px 0 #1f8a52; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+  .shots img { width: 100%; border-radius: 18px; box-shadow: 0 8px 24px #2b2d4222; display: block; }
+  ul { margin: 0; padding-left: 22px; font-size: 18px; line-height: 1.6; }
+  .note { font-size: 15px; opacity: .7; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">← zhangandrew.com</a>
+  <h1>🦉 Petit Hibou</h1>
+  <p class="sub">Jeu d’apprentissage pour la 2e année au Québec · 给魁北克二年级孩子的学习游戏</p>
+  <a class="play" href="https://playtimexd.github.io/JAJA/">▶ Jouer · 开始玩</a>
+  <div class="shots">
+    <img src="1.webp" alt="Accueil" loading="lazy">
+    <img src="2.webp" alt="Carte du cahier A" loading="lazy">
+    <img src="3.webp" alt="Arts plastiques" loading="lazy">
+  </div>
+  <ul>
+    <li>Français, mathématique (cahiers Numérik A/B/C), anglais, arts plastiques · 法语、数学、英语、手工美术</li>
+    <li>Facile / Moyen / Difficile · 简单 / 中等 / 难</li>
+    <li>Défi éclair, ballons, mémoire, gardiens, missions, badges · 闪电挑战、打气球、翻牌、守护者、任务和徽章</li>
+    <li>Plus de 170 projets de dessin et de bricolage étape par étape · 170 多个分步画画和手工项目</li>
+  </ul>
+  <p class="note">Sur iPad : Safari → Partager → « Sur l’écran d’accueil » pour l’installer. · iPad 上用 Safari 打开，点「分享」→「添加到主屏幕」即可安装。</p>
+</main>
+</body>
+</html>
