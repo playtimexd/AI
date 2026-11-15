@@ -6,45 +6,38 @@
 <title>Petit Hibou</title>
 <meta name="description" content="Jeu d'apprentissage pour la 2e année au Québec : français, mathématique, anglais, chinois, sciences, livres et arts plastiques.">
 <style>
-  :root { --ink: #2b2d42; --ink2: #5c6078; --bg: #fff8ec; --card: #fff; --line: #ece3d3; --green: #2fb36f; --purple: #8b5cf6; }
+  :root { --ink: #23253a; --ink2: #5b5f76; --bg: #fffaf1; --card: #fff; --line: #efe6d6; --green: #2fb36f; --accent: #8b5cf6; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
   a { color: inherit; }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
-  header { display: flex; align-items: center; gap: 16px; padding: 20px 0; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header { display: flex; align-items: center; gap: 16px; padding: 22px 0; }
   .back { text-decoration: none; color: var(--ink2); font-weight: 700; flex: 1; }
-  .langs { display: flex; background: var(--card); border-radius: 999px; padding: 4px; box-shadow: 0 3px 0 var(--line); }
-  .langs button { border: 0; background: none; font: inherit; font-weight: 800; padding: 8px 16px; border-radius: 999px; cursor: pointer; color: var(--ink2); }
+  .langs { display: flex; background: var(--card); border-radius: 999px; padding: 4px; border: 1px solid var(--line); }
+  .langs button { border: 0; background: none; font: inherit; font-weight: 800; font-size: 15px; padding: 7px 14px; border-radius: 999px; cursor: pointer; color: var(--ink2); }
   .langs button.on { background: var(--ink); color: #fff; }
-  .hero { display: grid; grid-template-columns: 1fr 1.15fr; gap: 40px; align-items: center; padding: 24px 0 56px; }
-  .logo { font-size: 64px; line-height: 1; }
-  h1 { font-size: clamp(44px, 7vw, 76px); margin: 8px 0 12px; line-height: 1; letter-spacing: -1px; }
-  .tag { font-size: clamp(19px, 2.2vw, 24px); color: var(--ink2); margin: 0 0 28px; line-height: 1.4; }
-  .play { display: inline-flex; align-items: center; gap: 12px; background: var(--green); color: #fff; text-decoration: none; font-weight: 900; font-size: 26px; padding: 18px 36px; border-radius: 24px; box-shadow: 0 7px 0 #1f8a52; }
-  .play:active { transform: translateY(5px); box-shadow: 0 2px 0 #1f8a52; }
-  .install { margin-top: 18px; color: var(--ink2); font-size: 15px; max-width: 420px; line-height: 1.5; }
-  .ipad { background: #23252f; border-radius: 34px; padding: 18px; box-shadow: 0 30px 60px #2b2d4230; transform: rotate(-1.5deg); }
-  .ipad img { display: block; width: 100%; border-radius: 18px; }
-  h2 { font-size: clamp(28px, 3.4vw, 38px); margin: 0 0 22px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 22px; padding-bottom: 56px; }
-  .card { background: var(--card); border-radius: 26px; overflow: hidden; box-shadow: 0 6px 0 var(--line); display: flex; flex-direction: column; }
-  .card img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-bottom: 1px solid var(--line); }
-  .card div { padding: 16px 20px 22px; }
-  .card h3 { margin: 0 0 6px; font-size: 22px; }
-  .card p { margin: 0; color: var(--ink2); line-height: 1.5; }
-  .facts { display: flex; flex-wrap: wrap; gap: 12px; padding-bottom: 40px; }
-  .fact { background: var(--card); border-radius: 18px; padding: 14px 20px; box-shadow: 0 4px 0 var(--line); font-weight: 800; }
-  .fact b { font-size: 26px; display: block; color: var(--purple); }
-  .story { display: flex; flex-direction: column; gap: 56px; padding: 8px 0 56px; }
-  .row { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
-  .row.rev img { order: 2; }
-  .row img { display: block; width: 100%; border-radius: 22px; box-shadow: 0 16px 40px #2b2d4220; }
-  .row h2 { margin: 0 0 12px; font-size: clamp(26px, 3vw, 34px); }
-  .row p, .parents p { margin: 0; font-size: 19px; line-height: 1.65; color: var(--ink2); }
-  .parents { background: var(--card); border-radius: 28px; padding: 30px 34px; box-shadow: 0 6px 0 var(--line); margin-bottom: 48px; }
-  @media (max-width: 860px) { .row { grid-template-columns: 1fr; } .row.rev img { order: 0; } }
-  footer { color: var(--ink2); padding: 24px 0 40px; border-top: 1px solid var(--line); font-size: 15px; }
-  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } .ipad { transform: none; } }
+  .hero { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: center; padding: 40px 0 80px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand img { width: 64px; height: 70px; }
+  h1 { font-size: clamp(42px, 5.6vw, 64px); margin: 0; line-height: 1; letter-spacing: -1px; }
+  .tag { font-size: 19px; color: var(--ink2); margin: 22px 0 30px; line-height: 1.6; max-width: 34em; }
+  .play { display: inline-flex; align-items: center; gap: 10px; background: var(--green); color: #fff; text-decoration: none; font-weight: 900; font-size: 21px; padding: 15px 30px; border-radius: 18px; box-shadow: 0 5px 0 #1f8a52; }
+  .play:active { transform: translateY(4px); box-shadow: 0 1px 0 #1f8a52; }
+  .install { margin-top: 18px; color: var(--ink2); font-size: 14px; max-width: 30em; line-height: 1.55; }
+  .device { background: #1e2030; border-radius: 28px; padding: 14px; box-shadow: 0 24px 50px rgba(35, 37, 58, .18); }
+  .device img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 16px; }
+  .story { display: flex; flex-direction: column; gap: 72px; padding: 0 0 72px; }
+  .row { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+  .row.rev .shot { order: 2; }
+  .shot { background: #1e2030; border-radius: 22px; padding: 10px; box-shadow: 0 16px 36px rgba(35, 37, 58, .14); }
+  .shot img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 13px; }
+  .num { font-size: 14px; font-weight: 900; color: var(--accent); letter-spacing: 1px; }
+  .row h2 { margin: 6px 0 12px; font-size: clamp(25px, 2.8vw, 32px); line-height: 1.2; }
+  .row p, .parents p { margin: 0; font-size: 18px; line-height: 1.7; color: var(--ink2); }
+  .parents { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 30px 34px; margin-bottom: 56px; }
+  .parents h2 { margin: 0 0 10px; font-size: 26px; }
+  footer { color: var(--ink2); padding: 22px 0 40px; border-top: 1px solid var(--line); font-size: 14px; }
+  @media (max-width: 860px) { .hero, .row { grid-template-columns: 1fr; gap: 28px; } .row.rev .shot { order: 0; } .hero { padding-top: 10px; } }
 </style>
 </head>
 <body>
@@ -58,21 +51,20 @@
 
   <section class="hero">
     <div>
-      <div class="logo">🦉</div>
-      <h1>Petit Hibou</h1>
+      <div class="brand"><img src="owl.svg" alt=""><h1>Petit Hibou</h1></div>
       <p class="tag" data-t="tag"></p>
       <a class="play" href="https://playtimexd.github.io/JAJA/">▶ <span data-t="play"></span></a>
       <p class="install" data-t="install"></p>
     </div>
-    <div class="ipad"><img src="home.webp" alt="" width="1200" height="900"></div>
+    <div class="device"><img src="home.webp" alt="" width="1200" height="900"></div>
   </section>
 
   <section class="story">
-    <div class="row"><img src="eclair.webp" alt="" loading="lazy"><div><h2 data-t="s1t"></h2><p data-t="s1"></p></div></div>
-    <div class="row rev"><img src="book.webp" alt="" loading="lazy"><div><h2 data-t="s2t"></h2><p data-t="s2"></p></div></div>
-    <div class="row"><img src="why.webp" alt="" loading="lazy"><div><h2 data-t="s3t"></h2><p data-t="s3"></p></div></div>
-    <div class="row rev"><img src="talk.webp" alt="" loading="lazy"><div><h2 data-t="s4t"></h2><p data-t="s4"></p></div></div>
-    <div class="row"><img src="arts.webp" alt="" loading="lazy"><div><h2 data-t="s5t"></h2><p data-t="s5"></p></div></div>
+    <div class="row"><div class="shot"><img src="eclair.webp" alt="" loading="lazy"></div><div><div class="num">01</div><h2 data-t="s1t"></h2><p data-t="s1"></p></div></div>
+    <div class="row rev"><div class="shot"><img src="book.webp" alt="" loading="lazy"></div><div><div class="num">02</div><h2 data-t="s2t"></h2><p data-t="s2"></p></div></div>
+    <div class="row"><div class="shot"><img src="why.webp" alt="" loading="lazy"></div><div><div class="num">03</div><h2 data-t="s3t"></h2><p data-t="s3"></p></div></div>
+    <div class="row rev"><div class="shot"><img src="talk.webp" alt="" loading="lazy"></div><div><div class="num">04</div><h2 data-t="s4t"></h2><p data-t="s4"></p></div></div>
+    <div class="row"><div class="shot"><img src="arts.webp" alt="" loading="lazy"></div><div><div class="num">05</div><h2 data-t="s5t"></h2><p data-t="s5"></p></div></div>
   </section>
   <section class="parents"><h2 data-t="pt"></h2><p data-t="p"></p></section>
   <footer data-t="foot"></footer>
